@@ -81,6 +81,15 @@ class HbosScraper < BaseScraper
   #
   def fetch_transactions_page(agent)
     login(agent)
+    statement_links = (agent.current_page/"#ctl00_MainPageContent_MyAccountsCtrl_tbl a")
+    account_nums = statement_links.map { |link| link.inner_html }
+    account_nums.each_with_index do |number,index|
+      puts "[#{index}] - #{number}"
+    end
+    select = ask("Which account do you want to scrape?")
+    selected_link_element = statement_links[select.to_i]
+    selected_link = agent.page.links.detect { |link| link.text == selected_link_element.inner_html }
+    transactions_page = selected_link.click
     logger.info("Logged in, now navigating to transactions on #{TRANSACTIONS_URL}.")
     transactions_page = agent.get(TRANSACTIONS_URL)
     if (transactions_page.nil?)

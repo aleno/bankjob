@@ -81,19 +81,28 @@ class HbosScraper < BaseScraper
   #
   def fetch_transactions_page(agent)
     login(agent)
+    
     statement_links = (agent.current_page/"#ctl00_MainPageContent_MyAccountsCtrl_tbl a")
-    account_nums = statement_links.map { |link| link.inner_html }
-    account_nums.each_with_index do |number,index|
-      puts "[#{index}] - #{number}"
+    if statement_links.blank?
+      puts "Wait a bit, and try again later." and return
+    else
+      statement_links.map { |link| link.inner_html }.each_with_index do |account_number,index|
+        puts "[#{index}] - #{account_number}"
+      end
+      choice = ask("Which account do you want to scrape?")
+    
+      link_for_chosen_account = agent.page.links.detect { |link|
+        # link.class                  =>   WWW::Mechanize::Page::Link
+        # statement_links[x].class    =>   Hpricot::Elem
+        link.text == statement_links[choice.to_i].inner_html
+      }
+    
+      transactions_page = link_for_chosen_account.click
     end
-    select = ask("Which account do you want to scrape?")
-    selected_link_element = statement_links[select.to_i]
-    selected_link = agent.page.links.detect { |link| link.text == selected_link_element.inner_html }
-    transactions_page = selected_link.click
-    logger.info("Logged in, now navigating to transactions on #{TRANSACTIONS_URL}.")
-    transactions_page = agent.get(TRANSACTIONS_URL)
+
+    logger.info("Logged in, now navigating to transactions on #{link_for_chosen_account.uri}.")
     if (transactions_page.nil?)
-      raise "HBOS Scraper failed to load the transactions page at #{TRANSACTIONS_URL}"
+      raise "HBOS Scraper failed to load the transactions page at #{link_for_chosen_account.uri}"
     end
     return transactions_page
   end

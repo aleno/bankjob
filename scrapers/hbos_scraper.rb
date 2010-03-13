@@ -32,8 +32,8 @@ class HbosScraper < BaseScraper
 
   currency  "GBP" # Set the currency as euros
   decimal   "."    # HBOS statements use periods as separators - this is used by the real_amount method
-  account_number "1234567" # override this with a real accoun number
   account_type Statement::CHECKING # this is the default anyway
+  account_number "1234567890" # gets overridden later
 
   # This rule detects ATM withdrawals and modifies
   # the description and sets the the type
@@ -96,7 +96,8 @@ class HbosScraper < BaseScraper
         # statement_links[x].class    =>   Hpricot::Elem
         link.text == statement_links[choice.to_i].inner_html
       }
-    
+
+      @account_name = link_for_chosen_account.text
       transactions_page = link_for_chosen_account.click
     end
 
@@ -119,16 +120,21 @@ class HbosScraper < BaseScraper
       statement = create_statement
 
       summary_cells = (transactions_page/".summaryBoxesValues")
-      statement.closing_available = summary_cells[BALANCE].inner_text.scan(/[\d.,]+/)[0].gsub(/\.|,/,"")
-      statement.closing_balance = summary_cells[AVAILABLE_BALANCE].inner_text.scan(/[\d.,]+/)[0].gsub(/\.|,/,"")
+      statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
+      closing_available = summary_cells[AVAILABLE_BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
+      statement.closing_available = closing_available
+      closing_balance = summary_cells[BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
+      statement.closing_balance = closing_balance
 
       transactions = []
       table = (transactions_page/"#frmStatement table")
       rows = (table/"tr")
       date_tracker = nil
       Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
-      current_line = Struct::Line.new
+      current_line = nil
       previous_line = Struct::Line.new
+      current_date = nil
+      extra_description = []
       rows.each_with_index do |row,index|
         next if index == 0 # first row is just headers
 
@@ -136,32 +142,43 @@ class HbosScraper < BaseScraper
 
         # collect all of the table cells' inner html in an array (stripping leading/trailing spaces)
         previous_line = current_line
+        current_line = Struct::Line.new
         data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
         current_line = Struct::Line.new(*data)
 
+        current_date ||= current_line.date
         # When consecutive transactions occur on the same date, the date is only displayed on the
-        # first row. So if current line has no date, get the date from the previous line.
-        if current_line.date.blank?
-          current_line.date = previous_line.date
+        # first row. So if current line has no date, get the date from the previous date.
+        if current_line.date.blank? || current_line.date == "\240"
+          current_line.date = current_date
+        else
+          current_date = current_line.date
         end
 
         # Check if previous line was blank. If so, merge its description into the current line description.
-        if blank_line?(previous_line)
+        if previous_line && blank_line?(previous_line)
           current_line.description = [current_line.description, previous_line.description].join(", ")
         end
         
         # Rows with no money in or out value just contain extra description. Skip these.
         next if blank_line?(current_line)
-        amount = current_line.money_out.blank? ?
+        amount = (current_line.money_out.blank? || current_line.money_out == "\240") ?
           current_line.money_in :
           "-" + current_line.money_out
 
-        transaction.date            = current_line.date
-        transaction.raw_description = current_line.description
-        transaction.amount          = amount
-        transaction.new_balance     = current_line.balance
+        # If money_in and money_out are zero then it's part of the next description.
+        # Wow, HBoS HTML is really screwed up...
+        if amount == "\240"
+          extra_description << current_line.description
+        else
+          transaction.date            = current_line.date
+          transaction.raw_description = current_line.description + (extra_description.any? ? ", " + extra_description.join(', ') : "")
+          extra_description = []
+          transaction.amount          = amount
+          transaction.new_balance     = current_line.balance
 
-        transactions << transaction
+          transactions << transaction
+        end
       end
     rescue => exception
       msg = "Failed to parse the transactions page at due to exception: #{exception.message}\nCheck your user name and password."

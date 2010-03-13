@@ -6,7 +6,11 @@ require 'bankjob'
 # Later versions of Mechanize no longer use Hpricot by default
 # but have an attribute we can set to use it
 begin
-  WWW::Mechanize.html_parser = Hpricot
+  Mechanize.html_parser = Hpricot
+
+  Hpricot::Elem.class_eval do
+    def <=>(other); 0; end
+  end
 rescue NoMethodError
 end
 
@@ -119,7 +123,7 @@ include Bankjob
       else
         # not debugging use the actual scraper
         # First create a mechanize agent: a sort of pretend web browser
-        agent = WWW::Mechanize.new
+        agent = Mechanize.new
         agent.user_agent_alias = 'Windows IE 6' # pretend that we're IE 6.0
         
         page = fetch_transactions_page(agent)

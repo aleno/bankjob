@@ -12,13 +12,6 @@ require 'yaml'
 
 include Bankjob        # access the namespace of Bankjob
 
-SORT_CODE         = 0
-ACCOUNT_NUMBER    = 1
-ROLL_NUMBER       = 2
-BALANCE           = 3
-OVERDRAFT_LIMIT   = 4
-AVAILABLE_BALANCE = 5
-
 class HbosString < String
   # HBos fill empty cells with \240 for some reason. Crazy.
   def blank?
@@ -60,6 +53,13 @@ class HbosAnswerAgent
 end
 
 class HbosCurrentAccountTransactionParser
+  SORT_CODE         = 0
+  ACCOUNT_NUMBER    = 1
+  ROLL_NUMBER       = 2
+  BALANCE           = 3
+  OVERDRAFT_LIMIT   = 4
+  AVAILABLE_BALANCE = 5
+
   def parse_into_statement(transactions_page, statement)
     summary_cells = (transactions_page/".summaryBoxesValues")
     closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
@@ -119,6 +119,41 @@ class HbosCurrentAccountTransactionParser
   end
 end
 
+class HbosStandardMasterCardAccountTransactionParser
+  BALANCE           = 0
+  AVAILABLE_BALANCE = 5
+
+  def parse_into_statement(transactions_page, statement)
+    summary_cells = (transactions_page/".summaryBoxesValues")
+    closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
+    statement.closing_available = closing_available
+    closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
+    statement.closing_balance = closing_balance
+    table = transactions_page / ".DataTable"
+    rows = (table/"tr")
+    Struct.new("Line", :date, :entered, :description, :amount)
+
+    rows.each_with_index do |row, index|
+      # First row is just headers
+      # Second row is balance from previous statement
+      next if index <= 1
+      transaction = Bankjob::Transaction.new ","
+
+      data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
+      current_line = Struct::Line.new(*data)
+
+      transaction.date            = current_line.date
+      transaction.raw_description = current_line.description
+      transaction.amount          = (HbosString.new(current_line.amount).to_f).to_s
+      if transaction.raw_description !~ /^payment /i && transaction.raw_description !~ /^direct debit /i
+        transaction.amount = "-#{transaction.amount}"
+      end
+
+      statement.transactions << transaction
+    end
+  end
+end
+
 class HbosTransactionParser
   attr_reader :account_type
 
@@ -127,9 +162,11 @@ class HbosTransactionParser
   end
 
   def parser_implementation
-    case account_type
+    case account_type.strip
     when "Bank of Scotland Current Account"
       HbosCurrentAccountTransactionParser.new
+    when "Standard Mastercard"
+      HbosStandardMasterCardAccountTransactionParser.new
     else
       raise "Could not work out the parser type to use for '#{account_type}'"
     end

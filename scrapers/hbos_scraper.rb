@@ -128,7 +128,6 @@ class HbosScraper < BaseScraper
 
       statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
       summary_cells = (transactions_page/".summaryBoxesValues")
-      statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
       closing_available = summary_cells[AVAILABLE_BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
       statement.closing_available = closing_available
       closing_balance = summary_cells[BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f

@@ -1,0 +1,22 @@
+TODO
+====
+
+* The OFX should (near enough) match the downloadable version on your
+  bank website. If they don't and you try to upload to Wesabe it'll
+  think you're uploading a new account. I think this means we'll need
+  to have a customisable OFX generator.
+
+* It'd be nice to have pluggable output mechanisms so I could do eg
+  bankjob --out json:/path/to/wherever.json --out ofx:/path/to/other.ofx
+
+* Some bank accounts don't have both bank_id and account_id. Credit
+  cards for example only have a card number.
+
+* Instructions for writing your own scraper would be nice.
+
+* There needs to be a distinction between the account for online
+  banking and the bank account. One online banking account may have
+  access to several bank accounts.
+
+* If Bankjob::Statement attributes +to_date+ and +from_date+ aren't set
+  these should be calculated from the first and last transaction dates.

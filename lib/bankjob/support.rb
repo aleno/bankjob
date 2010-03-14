@@ -27,32 +27,6 @@ module Bankjob
   end
 
   ##
-  # Takes a Time or DateTime and formats it in the correct format for OFX date elements.
-  #
-  # The OFX format is a string of digits in the format "YYMMDDHHMMSS".
-  # For example, the 1st of February 2009 at 2:34PM and 56 second becomes "20090201143456"
-  #
-  # Note must use a Time, or DateTime, not a String, nor a Date.
-  #
-  def self.date_time_to_ofx(time)
-    time.nil? ? "" : "#{time.strftime( '%Y%m%d%H%M%S' )}"
-  end
-
-  ##
-  # Takes a Time or DateTime and formats in a suitable format for comma separated values files.
-  # The format produced is suitable for loading into an Excel-like spreadsheet program
-  # being automatically treated as a date.
-  #
-  # A string is returned with the format "YY-MM-DD HH:MM:SS".
-  # For example, the 1st of February 2009 at 2:34PM and 56 second becomes "2009-02-01 14:34:56"
-  #
-  # Note must use a Time, or DateTime, not a String, nor a Date.
-  #
-  def self.date_time_to_csv(time)
-    time.nil? ? "" : "#{time.strftime( '%Y-%m-%d %H:%M:%S' )}"
-  end
-
-  ##
   # Takes a string and capitalizes the first letter of every word
   # and forces the rest of the word to be lowercase.
   #

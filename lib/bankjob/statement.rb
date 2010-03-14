@@ -10,15 +10,6 @@ module Bankjob
   # The Statement holds an array of Transaction objects and specifies the closing balance and the currency in use.
   #
   # A Scraper will create a Statement by scraping web pages in an online banking site.
-  # The Statement can then be stored as a file in CSV (Comma Separated Values) format
-  # using +to_csv+ or in OFX (Open Financial eXchange http://www.ofx.net) format
-  # using +to_ofx+.
-  #
-  # One special ability of Statement is the ability to merge with an existing statement,
-  # automatically eliminating overlapping transactions.
-  # This means that when writing subsequent statements to the same CSV file
-  # <em>(note well: CSV only)</em> a continous transaction record can be built up
-  # over a long period.
   #
   class Statement
 
@@ -159,21 +150,6 @@ module Bankjob
     end
 
     ##
-    # Generates a CSV (comma separated values) string with a single
-    # row for each transaction.
-    # Note that no header row is generated as it would make it
-    # difficult to concatenate and merge subsequent CSV strings
-    # (but we should consider it as a user option in the future)
-    #
-    def to_csv
-      buf = ""
-      transactions.each do |transaction|
-        buf << transaction.to_csv
-      end
-      return buf
-    end
-
-    ##
     # Generates a string for use as a header in a CSV file for a statement.
     #
     # Delegates to Transaction#csv_header
@@ -202,116 +178,6 @@ module Bankjob
           add_transaction(Transaction.from_csv(row, decimal))
         end
       end
-    end
-
-    ##
-    # Generates an XML string adhering to the OFX standard
-    # (see Open Financial eXchange http://www.ofx.net)
-    # representing a single bank statement holding a list
-    # of transactions.
-    # The XML for the individual transactions is generated
-    # by the Transaction class itself.
-    #
-    # The OFX 2 schema for a statement response (STMTRS) is:
-    #
-    #  <xsd:complexType name="StatementResponse">
-    #    <xsd:annotation>
-    #      <xsd:documentation>
-    #        The OFX element "STMTRS" is of type "StatementResponse"
-    #      </xsd:documentation>
-    #    </xsd:annotation>
-    #
-    #    <xsd:sequence>
-    #      <xsd:element name="CURDEF" type="ofx:CurrencyEnum"/>
-    #      <xsd:element name="BANKACCTFROM" type="ofx:BankAccount"/>
-    #      <xsd:element name="BANKTRANLIST" type="ofx:BankTransactionList" minOccurs="0"/>
-    #      <xsd:element name="LEDGERBAL" type="ofx:LedgerBalance"/>
-    #      <xsd:element name="AVAILBAL" type="ofx:AvailableBalance" minOccurs="0"/>
-    #      <xsd:element name="BALLIST" type="ofx:BalanceList" minOccurs="0"/>
-    #      <xsd:element name="MKTGINFO" type="ofx:InfoType" minOccurs="0"/>
-    #    </xsd:sequence>
-    #  </xsd:complexType>
-    #
-    # Where the BANKTRANLIST (Bank Transaction List) is defined as:
-    #
-    #  <xsd:complexType name="BankTransactionList">
-    #    <xsd:annotation>
-    #      <xsd:documentation>
-    #        The OFX element "BANKTRANLIST" is of type "BankTransactionList"
-    #      </xsd:documentation>
-    #    </xsd:annotation>
-    #    <xsd:sequence>
-    #      <xsd:element name="DTSTART" type="ofx:DateTimeType"/>
-    #      <xsd:element name="DTEND" type="ofx:DateTimeType"/>
-    #      <xsd:element name="STMTTRN" type="ofx:StatementTransaction" minOccurs="0" maxOccurs="unbounded"/>
-    #    </xsd:sequence>
-    #  </xsd:complexType>
-    #
-    # And this is the definition of the type BankAccount.
-    #
-    #  <xsd:complexType name="BankAccount">
-		#    <xsd:annotation>
-		#      <xsd:documentation>
-    #        The OFX elements BANKACCTFROM and BANKACCTTO are of type "BankAccount"
-    #      </xsd:documentation>
-		#    </xsd:annotation>
-		#    <xsd:complexContent>
-		#      <xsd:extension base="ofx:AbstractAccount">
-    #        <xsd:sequence>
-    #          <xsd:element name="BANKID" type="ofx:BankIdType"/>
-    #          <xsd:element name="BRANCHID" type="ofx:AccountIdType" minOccurs="0"/>
-    #          <xsd:element name="ACCTID" type="ofx:AccountIdType"/>
-    #          <xsd:element name="ACCTTYPE" type="ofx:AccountEnum"/>
-    #          <xsd:element name="ACCTKEY" type="ofx:AccountIdType" minOccurs="0"/>
-    #        </xsd:sequence>
-    #      </xsd:extension>
-    #    </xsd:complexContent>
-    #  </xsd:complexType>
-    #
-    # The to_ofx method will only generate the essential elements which are 
-    # * BANKID - the bank identifier (a 1-9 char string - may be empty)
-    # * ACCTID - the account number (a 1-22 char string - may not be empty!)
-    # * ACCTTYPE - the type of account - must be one of:
-    #              "CHECKING", "SAVINGS", "MONEYMRKT", "CREDITLINE"
-    #
-    # (See Transaction for a definition of STMTTRN)
-    #
-    def to_ofx
-      buf = ""
-      # Use Builder to generate XML. Builder works by catching missing_method
-      # calls and generating an XML element with the name of the missing method,
-      # nesting according to the nesting of the calls and using arguments for content
-      x = Builder::XmlMarkup.new(:target => buf, :indent => 2)
-      x.OFX {
-        x.BANKMSGSRSV1 { #Bank Message Response
-          x.STMTTRNRS {		#Statement-transaction aggregate response
-            x.STMTRS {		#Statement response
-              x.CURDEF currency	#Currency
-              x.BANKACCTFROM {
-                x.BANKID bank_id # bank identifier
-                x.ACCTID account_number
-                x.ACCTTYPE account_type # acct type: checking/savings/...
-              }
-              x.BANKTRANLIST {	#Transactions
-                x.DTSTART Bankjob.date_time_to_ofx(from_date)
-                x.DTEND Bankjob.date_time_to_ofx(to_date)
-                transactions.each { |transaction|
-                  buf << transaction.to_ofx
-                }
-              }
-              x.LEDGERBAL {	# the final balance at the end of the statement
-                x.BALAMT closing_balance # balance amount
-                x.DTASOF Bankjob.date_time_to_ofx(to_date)		# balance date
-              }
-              x.AVAILBAL {	# the final Available balance
-                x.BALAMT closing_available
-                x.DTASOF Bankjob.date_time_to_ofx(to_date)
-              }
-            }
-          }
-        }
-      }
-      return buf
     end
     
     ONE_MINUTE = 60

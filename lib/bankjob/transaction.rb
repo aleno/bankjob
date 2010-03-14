@@ -14,10 +14,6 @@ module Bankjob
   # These Transactions will be collected in a Statement object which will then be written
   # to a file.
   #
-  # A Transaction object knows how to write itself as a record in a CSV
-  # (Comma Separated Values) file using +to_csv+ or as an XML element in an
-  # OFX (Open Financial eXchange http://www.ofx.net) file using +to_ofx+
-  #
   class Transaction
 
     # OFX transaction type for Generic credit
@@ -234,120 +230,6 @@ module Bankjob
       Bankjob.string_to_float(new_balance, @decimal)
     end
 
-    ##
-    # Generates a string representing this Transaction as comma separated values
-    # in the form:
-    #
-    # <tt>date, value_date, description, real_amount, real_new_balance, amount, new_balance, raw_description, ofx_id</tt>
-    #
-    def to_csv
-      # if there's a payee, prepend their name to the description - otherwise skip it
-      if (not payee.nil? and (not payee.name.nil?))
-        desc = payee.name + " - " + description
-      else
-        desc = description
-      end
-      [Bankjob.date_time_to_csv(date), Bankjob.date_time_to_csv(value_date), desc, real_amount, real_new_balance, amount, new_balance, raw_description, ofx_id].to_csv
-    end
-
-    ##
-    # Generates a string for use as a header in a CSV file for transactions.
-    # This will produce the following string:
-    #
-    # <tt>date, value_date, description, real_amount, real_new_balance, amount, new_balance, raw_description, ofx_id</tt>
-    #
-    def self.csv_header
-      %w{ Date Value-Date Description Amount New-Balance Raw-Amount Raw-New-Balance Raw-Description OFX-ID }.to_csv
-    end
-
-    ##
-    # Creates a new Transaction from a string that defines a row in a CSV file.
-    #
-    # +csv_row+ must hold an array of values in precisely this order:
-    #
-    # <tt>date, value_date, description, real_amount, real_new_balance, amount, new_balance, raw_description, ofx_id</tt>
-    #
-    # <em>(The format should be the same as that produced by +to_csv+)</em>
-    #
-    def self.from_csv(csv_row, decimal)
-      if (csv_row.length != 9)  # must have 9 cols
-        csv_lines = csv_row.join("\n\t")
-        msg = "Failed to create Transaction from csv row: \n\t#{csv_lines}\n"
-        msg << " - 9 columns are required in the form: date, value_date, "
-        msg << "description, real_amount, real_new_balance, amount, new_balance, "
-        msg << "raw_description, ofx_id"
-        raise msg
-      end
-      tx = Transaction.new(decimal)
-      tx.date, tx.value_date, tx.description = csv_row[0..2]
-      # skip real_amount and real_new_balance, they're read only and calculated
-      tx.amount, tx.new_balance, tx.raw_description, tx.ofx_id = csv_row[5..8]
-      return tx
-    end
-
-    ##
-    # Generates an XML string adhering to the OFX standard
-    # (see Open Financial Exchange http://www.ofx.net)
-    # representing a single Transaction XML element.
-    #
-    # The OFX 2 schema defines a STMTTRN (SatementTransaction) as follows:
-    #
-    #  <xsd:complexType name="StatementTransaction">
-    #    <xsd:annotation>
-    #      <xsd:documentation>
-    #        The OFX element "STMTTRN" is of type "StatementTransaction"
-    #      </xsd:documentation>
-    #    </xsd:annotation>
-    #    <xsd:sequence>
-    #      <xsd:element name="TRNTYPE" type="ofx:TransactionEnum"/>
-    #      <xsd:element name="DTPOSTED" type="ofx:DateTimeType"/>
-    #      <xsd:element name="DTUSER" type="ofx:DateTimeType" minOccurs="0"/>
-    #      <xsd:element name="DTAVAIL" type="ofx:DateTimeType" minOccurs="0"/>
-    #      <xsd:element name="TRNAMT" type="ofx:AmountType"/>
-    #      <xsd:element name="FITID" type="ofx:FinancialInstitutionTransactionIdType"/>
-    #      <xsd:sequence minOccurs="0">
-    #        <xsd:element name="CORRECTFITID" type="ofx:FinancialInstitutionTransactionIdType"/>
-    #        <xsd:element name="CORRECTACTION" type="ofx:CorrectiveActionEnum"/>
-    #      </xsd:sequence>
-    #      <xsd:element name="SRVRTID" type="ofx:ServerIdType" minOccurs="0"/>
-    #      <xsd:element name="CHECKNUM" type="ofx:CheckNumberType" minOccurs="0"/>
-    #      <xsd:element name="REFNUM" type="ofx:ReferenceNumberType" minOccurs="0"/>
-    #      <xsd:element name="SIC" type="ofx:StandardIndustryCodeType" minOccurs="0"/>
-    #      <xsd:element name="PAYEEID" type="ofx:PayeeIdType" minOccurs="0"/>
-    #      <xsd:choice minOccurs="0">
-    #        <xsd:element name="NAME" type="ofx:GenericNameType"/>
-    #        <xsd:element name="PAYEE" type="ofx:Payee"/>
-    #      </xsd:choice>
-    #      <xsd:choice minOccurs="0">
-    #        <xsd:element name="BANKACCTTO" type="ofx:BankAccount"/>
-    #        <xsd:element name="CCACCTTO" type="ofx:CreditCardAccount"/>
-    #      </xsd:choice>
-    #      <xsd:element name="MEMO" type="ofx:MessageType" minOccurs="0"/>
-    #      <xsd:choice minOccurs="0">
-    #        <xsd:element name="CURRENCY" type="ofx:Currency"/>
-    #        <xsd:element name="ORIGCURRENCY" type="ofx:Currency"/>
-    #      </xsd:choice>
-    #      <xsd:element name="INV401KSOURCE" type="ofx:Investment401kSourceEnum" minOccurs="0"/>
-    #    </xsd:sequence>
-    #  </xsd:complexType>
-    #
-    def to_ofx
-      buf = ""
-      # Set margin=5 to indent it nicely within the output from Statement.to_ofx
-      x = Builder::XmlMarkup.new(:target => buf, :indent => 2, :margin=>5)
-      x.STMTTRN {	# transaction statement
-        x.TRNTYPE type
-        x.DTPOSTED Bankjob.date_time_to_ofx(date)	#Date transaction was posted to account, [datetime] yyyymmdd or yyyymmddhhmmss
-        x.TRNAMT amount	#Ammount of transaction [amount] can be , or . separated
-        x.FITID ofx_id
-        x.CHECKNUM check_number unless check_number.nil?
-        buf << payee.to_ofx unless payee.nil?
-        #x.NAME description
-        x.MEMO description
-      }
-      return buf
-    end
-    
     ##
     # Produces a string representation of the transaction
     #

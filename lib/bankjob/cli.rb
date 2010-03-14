@@ -135,9 +135,6 @@ module Bankjob
         if options.scraper == NEEDED
           raise "Incomplete arguments: You must specify a scraper ruby script with --scraper"
         end
-
-        # Set output to stdout if it's not been set
-        options.ofx = true unless options.csv or options.wesabe_upload
       rescue Exception => e
         if options.debug
           # just dump the message and eat the exception - 

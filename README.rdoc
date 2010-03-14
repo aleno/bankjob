@@ -14,14 +14,12 @@ It's also useful for keeping a permanent store of bank statements on your comput
 * Scrapes an online banking website to produce a bank statement
 * Stores bank statements locally in CSV files, which can be loaded directly in spreadsheets like Microsoft Excel
 * Stores bank statements locally in OFX files, which can be imported by many programs such as Quicken, MS Money, Gnu Cash and uploaded to some web applications
-* Built-in support for uploading to your Wesabe account (www.wesabe.com)
 * Supports coding of simple rules in ruby for modifying transaction details. E.g. automatically change "pment inst 3245003" to "paid home loan interest"
 
 == SYNOPSIS:
 
-  bankjob --csv c:\bank\csv --scraper c:\bank\my_bpi_scraper.rb
+  bankjob --out csv:c:\bank\foo.csv --scraper c:\bank\my_bpi_scraper.rb
           --scraper-args "<my_username> <my_password>"
-          --wesabe "<wesabe_user> <wesabe_pass> <wesabe_acct>
           --log c:\bank\bankjob.log --debug
 
 I have this command in a .bat file which is launched daily by a scheduled task on my windows Media Center PC (which, since it's always on and connected to the internet, makes a useful home server)
@@ -30,9 +28,8 @@ This one command will:
 * scrape my online banking website after logging in as me and navigating to the page with recent transactions
 * apply some rules, coded in the my_bpi_scraper.rb file that make the descriptions more readable
 * produce a statement in comma-separated-value format, keeping the original raw data as well as the new descriptions,
-  storing that in a file with a name like "20090327-20090406.csv" in my local directory c:\bank\csv (a permanent record)
+  storing that in c:\bank\foo.csv
 * produce an OFX document with the same statement information
-* upload the OFX statement to my wesabe account
 * log debug-level details in bankjob.log
 
 == REQUIREMENTS:

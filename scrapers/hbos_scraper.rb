@@ -148,9 +148,9 @@ class HbosScraper < BaseScraper
 
         # collect all of the table cells' inner html in an array (stripping leading/trailing spaces)
         previous_line = current_line
-        current_line = Struct::Line.new
         data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
         current_line = Struct::Line.new(*data)
+        next if blank_line?(current_line)
 
         current_date ||= current_line.date
         # When consecutive transactions occur on the same date, the date is only displayed on the
@@ -167,23 +167,16 @@ class HbosScraper < BaseScraper
         end
         
         # Rows with no money in or out value just contain extra description. Skip these.
-        next if blank_line?(current_line)
         amount = HbosString.new(current_line.money_out).blank? ?
           current_line.money_in : "-" + current_line.money_out
 
-        # If money_in and money_out are zero then it's part of the next description.
-        # Wow, HBoS HTML is really screwed up...
-        if amount == "\240"
-          extra_description << current_line.description
-        else
-          transaction.date            = current_line.date
-          transaction.raw_description = current_line.description + (extra_description.any? ? ", " + extra_description.join(', ') : "")
-          extra_description = []
-          transaction.amount          = amount
-          transaction.new_balance     = current_line.balance
+        transaction.date            = current_line.date
+        transaction.raw_description = current_line.description
+        extra_description = []
+        transaction.amount          = amount
+        transaction.new_balance     = current_line.balance
 
-          transactions << transaction
-        end
+        transactions << transaction
       end
     rescue => exception
       msg = "Failed to parse the transactions page at due to exception: #{exception.message}\nCheck your user name and password."
@@ -238,7 +231,7 @@ class HbosScraper < BaseScraper
   end
 
   def blank_line?(line)
-    HbosString.new(line.money_out).blank? and HbosString(line.money_in).blank?
+    HbosString.new(line.money_out).blank? and HbosString.new(line.money_in).blank?
   end
 
 end # class HbosScraper

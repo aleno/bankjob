@@ -257,7 +257,12 @@ class HbosScraper < BaseScraper
       end
     end
 
-    account_type = (link.node.parent / "text()")[1].to_s
+    node = link.node
+    while node['class'] !~ /myAccountsDetailsCell/
+      node = node.parent
+    end
+    puts((node / "text()")[-2].inspect)
+    account_type = (node / "text()")[-2].to_s
     @transaction_parser = HbosTransactionParser.new(account_type)
     @account_name = link.text
     link.click

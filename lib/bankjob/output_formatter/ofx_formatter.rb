@@ -5,7 +5,7 @@ module Bankjob
     class OfxFormatter
       attr_accessor :destination
 
-      def initialize(destination)
+      def initialize(destination = nil)
         @destination = destination.blank? ? STDOUT : destination
       end
 
@@ -33,10 +33,18 @@ module Bankjob
                       ofx.STMTTRN {	# transaction statement
                         ofx.TRNTYPE transaction.type
                         ofx.DTPOSTED transaction.date.strftime('%Y%m%d%H%M%S')	#Date transaction was posted to account, [datetime] yyyymmdd or yyyymmddhhmmss
-                        ofx.TRNAMT transaction.amount	#Ammount of transaction [amount] can be , or . separated
+                        ofx.TRNAMT transaction.amount	#Amount of transaction [amount] can be , or . separated
                         ofx.FITID transaction.ofx_id
-                        # x.CHECKNUM check_number unless check_number.nil?
-                        # buf << payee.to_ofx unless payee.nil?
+                        ofx.CHECKNUM transaction.check_number unless transaction.check_number.nil?
+                        ofx.PAYEE {
+                          ofx.NAME transaction.payee.name
+                          ofx.ADDR1 transaction.payee.address
+                          ofx.CITY transaction.payee.city
+                          ofx.STATE transaction.payee.state
+                          ofx.POSTALCODE transaction.payee.postalcode
+                          ofx.COUNTRY transaction.payee.country unless transaction.payee.country.nil? # minOccurs="0" in schema (above)
+                          ofx.PHONE transaction.payee.phone
+                        }
                         ofx.MEMO transaction.description
                       }
                     }
@@ -63,7 +71,7 @@ module Bankjob
           builder = Builder::XmlMarkup.new(:indent => 2)
           ofx = yield builder
           File.open(destination, 'w') { |f| f.puts ofx }
-        when IO
+        when StringIO, IO
           builder = Builder::XmlMarkup.new(:target => destination,
                                            :indent => 2)
           yield builder

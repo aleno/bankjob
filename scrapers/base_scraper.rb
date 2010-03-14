@@ -7,6 +7,14 @@ require 'bankjob'
 # but have an attribute we can set to use it
 begin
   Mechanize.html_parser = Hpricot
+
+  # For some reason something tries to sort an Hpricot::Elem[] which
+  # fails because Hpricot::Elem doesn't have a <=> method.
+  if !Hpricot::Elem.methods.include?("<=>")
+    Hpricot::Elem.class_eval do
+      def <=>(other); 0; end
+    end
+  end
 rescue NoMethodError
 end
 

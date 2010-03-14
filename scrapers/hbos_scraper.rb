@@ -121,8 +121,11 @@ class HbosScraper < BaseScraper
 
       statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
       summary_cells = (transactions_page/".summaryBoxesValues")
-      statement.closing_available = summary_cells[BALANCE].inner_text.scan(/[\d.,]+/)[0].gsub(/\.|,/,"")
-      statement.closing_balance = summary_cells[AVAILABLE_BALANCE].inner_text.scan(/[\d.,]+/)[0].gsub(/\.|,/,"")
+      statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
+      closing_available = summary_cells[AVAILABLE_BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
+      statement.closing_available = closing_available
+      closing_balance = summary_cells[BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
+      statement.closing_balance = closing_balance
 
       transactions = []
       table = (transactions_page/"#frmStatement table")

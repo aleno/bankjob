@@ -209,7 +209,7 @@ class HbosScraper < BaseScraper
 
       # Rows with no money in or out value just contain extra description. Skip these.
       amount = HbosString.new(current_line.money_out).blank? ?
-      current_line.money_in : "-" + current_line.money_out
+        current_line.money_in : "-" + current_line.money_out
 
       transaction.date            = current_line.date
       transaction.raw_description = current_line.description

@@ -16,6 +16,13 @@ BALANCE           = 3
 OVERDRAFT_LIMIT   = 4
 AVAILABLE_BALANCE = 5
 
+class HbosString < String
+  # HBos fill empty cells with \240 for some reason. Crazy.
+  def blank?
+    super || self == "\240"
+  end
+end
+
 ##
 # HbosScraper is a scraper tailored to the HBOS bank in the UK (http://www.bankofscotland.co.uk/).
 # It takes advantage of the BaseScraper to create the mechanize agent,
@@ -119,8 +126,8 @@ class HbosScraper < BaseScraper
     begin
       statement = create_statement
 
-      summary_cells = (transactions_page/".summaryBoxesValues")
       statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
+      summary_cells = (transactions_page/".summaryBoxesValues")
       closing_available = summary_cells[AVAILABLE_BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
       statement.closing_available = closing_available
       closing_balance = summary_cells[BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
@@ -134,7 +141,6 @@ class HbosScraper < BaseScraper
       current_line = nil
       previous_line = Struct::Line.new
       current_date = nil
-      extra_description = []
       rows.each_with_index do |row,index|
         next if index == 0 # first row is just headers
 
@@ -149,7 +155,7 @@ class HbosScraper < BaseScraper
         current_date ||= current_line.date
         # When consecutive transactions occur on the same date, the date is only displayed on the
         # first row. So if current line has no date, get the date from the previous date.
-        if current_line.date.blank? || current_line.date == "\240"
+        if HbosString.new(current_line.date).blank?
           current_line.date = current_date
         else
           current_date = current_line.date
@@ -162,9 +168,8 @@ class HbosScraper < BaseScraper
         
         # Rows with no money in or out value just contain extra description. Skip these.
         next if blank_line?(current_line)
-        amount = (current_line.money_out.blank? || current_line.money_out == "\240") ?
-          current_line.money_in :
-          "-" + current_line.money_out
+        amount = HbosString.new(current_line.money_out).blank? ?
+          current_line.money_in : "-" + current_line.money_out
 
         # If money_in and money_out are zero then it's part of the next description.
         # Wow, HBoS HTML is really screwed up...
@@ -233,7 +238,7 @@ class HbosScraper < BaseScraper
   end
 
   def blank_line?(line)
-    line.money_out.blank? and line.money_in.blank?
+    HbosString.new(line.money_out).blank? and HbosString(line.money_in).blank?
   end
 
 end # class HbosScraper

@@ -60,11 +60,17 @@ module Bankjob
 
     # the last date of the period the statement covers
     # Translates to the OFX element DTEND
-    attr_accessor :to_date
+    attr_writer :to_date
+    def to_date
+      @to_date || transactions.sort_by { |tx| tx.date }[0].date
+    end
 
     # the first date of the period the statement covers
     # Translates to the OFX element DTSTART
-    attr_accessor :from_date
+    attr_writer :from_date
+    def from_date
+      @from_date || transactions.sort_by { |tx| tx.date }[-1].date
+    end
 
     ##
     # Creates a new empty Statement with no transactions.

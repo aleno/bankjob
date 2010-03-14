@@ -59,6 +59,87 @@ class HbosAnswerAgent
   end
 end
 
+class HbosCurrentAccountTransactionParser
+  def parse_into_statement(transactions_page, statement)
+    summary_cells = (transactions_page/".summaryBoxesValues")
+    closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
+    statement.closing_available = closing_available
+    closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
+    statement.closing_balance = closing_balance
+
+    transactions = []
+    table = (transactions_page/"#frmStatement table")
+    rows = (table/"tr")
+    date_tracker = nil
+    Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
+    current_line = nil
+    previous_line = Struct::Line.new
+    current_date = nil
+    rows.each_with_index do |row,index|
+      next if index == 0 # first row is just headers
+
+      transaction = Bankjob::Transaction.new ","
+
+      # collect all of the table cells' inner html in an array (stripping leading/trailing spaces)
+      previous_line = current_line
+      data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
+      current_line = Struct::Line.new(*data)
+      next if blank_line?(current_line)
+
+      current_date ||= current_line.date
+      # When consecutive transactions occur on the same date, the date is only displayed on the
+      # first row. So if current line has no date, get the date from the previous date.
+      if HbosString.new(current_line.date).blank?
+        current_line.date = current_date
+      else
+        current_date = current_line.date
+      end
+
+      # Check if previous line was blank. If so, merge its description into the current line description.
+      if previous_line && blank_line?(previous_line)
+        current_line.description = [current_line.description, previous_line.description].join(", ")
+      end
+
+      # Rows with no money in or out value just contain extra description. Skip these.
+      amount = HbosString.new(current_line.money_out).blank? ?
+        current_line.money_in : "-" + current_line.money_out
+
+      transaction.date            = current_line.date
+      transaction.raw_description = current_line.description
+      transaction.amount          = amount
+      transaction.new_balance     = current_line.balance
+
+      statement.transactions << transaction
+    end
+  end
+
+  private
+  def blank_line?(line)
+    HbosString.new(line.money_out).blank? and HbosString.new(line.money_in).blank?
+  end
+end
+
+class HbosTransactionParser
+  attr_reader :account_type
+
+  def initialize(account_type)
+    @account_type = account_type
+  end
+
+  def parser_implementation
+    case account_type
+    when "Bank of Scotland Current Account"
+      HbosCurrentAccountTransactionParser.new
+    else
+      raise "Could not work out the parser type to use for '#{account_type}'"
+    end
+  end
+
+  def method_missing(method_name, *args)
+    parser_implementation.send(method_name, *args)
+  end
+end
+
 ##
 # HbosScraper is a scraper tailored to the HBOS bank in the UK (http://www.bankofscotland.co.uk/).
 # It takes advantage of the BaseScraper to create the mechanize agent,
@@ -134,22 +215,24 @@ class HbosScraper < BaseScraper
   end
 
   def open_account_page(agent)
-    if target_account.blank?
+    link = if target_account.blank?
       statement_links.map { |link| link.inner_html }.each_with_index do |account_number,index|
         puts "[#{index}] - #{account_number}"
       end
       choice = ask("Which account do you want to scrape?")
   
-      link_for_chosen_account = agent.page.links.detect { |link|
+      agent.page.links.detect { |link|
         link.text == statement_links[choice.to_i].inner_html
       }
-
-      @account_name = link_for_chosen_account.text
-      link_for_chosen_account.click
     else
       @account_name = target_account
-      agent.page.link_with(:text => target_account).click
+      agent.page.link_with(:text => @account_name)
     end
+
+    account_type = (link.node.parent / "text()")[1].to_s
+    @transaction_parser = HbosTransactionParser.new(account_type)
+    @account_name = link.text
+    link.click
   end
 
   def target_account
@@ -166,62 +249,9 @@ class HbosScraper < BaseScraper
   #
   def parse_transactions_page(transactions_page)
     statement = create_statement
-
     statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
-    summary_cells = (transactions_page/".summaryBoxesValues")
-    closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
-    statement.closing_available = closing_available
-    closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
-    statement.closing_balance = closing_balance
-
-    transactions = []
-    table = (transactions_page/"#frmStatement table")
-    rows = (table/"tr")
-    date_tracker = nil
-    Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
-    current_line = nil
-    previous_line = Struct::Line.new
-    current_date = nil
-    rows.each_with_index do |row,index|
-      next if index == 0 # first row is just headers
-
-      transaction = create_transaction # use the support method because it sets the separator
-
-      # collect all of the table cells' inner html in an array (stripping leading/trailing spaces)
-      previous_line = current_line
-      data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
-      current_line = Struct::Line.new(*data)
-      next if blank_line?(current_line)
-
-      current_date ||= current_line.date
-      # When consecutive transactions occur on the same date, the date is only displayed on the
-      # first row. So if current line has no date, get the date from the previous date.
-      if HbosString.new(current_line.date).blank?
-        current_line.date = current_date
-      else
-        current_date = current_line.date
-      end
-
-      # Check if previous line was blank. If so, merge its description into the current line description.
-      if previous_line && blank_line?(previous_line)
-        current_line.description = [current_line.description, previous_line.description].join(", ")
-      end
-
-      # Rows with no money in or out value just contain extra description. Skip these.
-      amount = HbosString.new(current_line.money_out).blank? ?
-        current_line.money_in : "-" + current_line.money_out
-
-      transaction.date            = current_line.date
-      transaction.raw_description = current_line.description
-      transaction.amount          = amount
-      transaction.new_balance     = current_line.balance
-
-      transactions << transaction
-    end
-
-    # set the transactions on the statement
-    statement.transactions = transactions
-    return statement
+    @transaction_parser.parse_into_statement(transactions_page, statement)
+    statement
   rescue => exception
     msg = "Failed to parse the transactions page. Check your user name and password are correct."
     logger.fatal(msg);
@@ -265,12 +295,6 @@ class HbosScraper < BaseScraper
 
     agent.submit(form)
   end
-
-  private
-  def blank_line?(line)
-    HbosString.new(line.money_out).blank? and HbosString.new(line.money_in).blank?
-  end
-
 end # class HbosScraper
 
 

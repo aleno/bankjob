@@ -97,6 +97,7 @@ class HbosScraper < BaseScraper
         link.text == statement_links[choice.to_i].inner_html
       }
     
+      @account_name = link_for_chosen_account.text
       transactions_page = link_for_chosen_account.click
     end
 
@@ -118,6 +119,7 @@ class HbosScraper < BaseScraper
     begin
       statement = create_statement
 
+      statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
       summary_cells = (transactions_page/".summaryBoxesValues")
       statement.closing_available = summary_cells[BALANCE].inner_text.scan(/[\d.,]+/)[0].gsub(/\.|,/,"")
       statement.closing_balance = summary_cells[AVAILABLE_BALANCE].inner_text.scan(/[\d.,]+/)[0].gsub(/\.|,/,"")

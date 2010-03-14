@@ -1,6 +1,4 @@
 require 'rubygems'
-require 'builder'
-require 'fastercsv'
 require 'bankjob'
 
 module Bankjob

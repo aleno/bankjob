@@ -1,4 +1,3 @@
-
 require 'rubygems'
 require 'bankjob'      # this require will pull in all the classes we need
 require 'base_scraper' # this defines scraper that BpiScraper extends

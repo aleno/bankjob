@@ -1,7 +1,4 @@
-
 require 'rubygems'
-require 'builder'
-require 'digest/md5'
 
 module Bankjob
 

@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'logger'
-require 'bankjob.rb'
+require 'bankjob'
 
 module Bankjob
   class BankjobRunner

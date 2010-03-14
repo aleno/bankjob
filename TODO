@@ -25,3 +25,6 @@ TODO
 
 * The HBoS transaction page is actually only the first page of several.
   We should parse them all.
+
+* Scrapers should be specified the same way that output formatters are.
+  bankjob --scraper bpi:"username password" ...

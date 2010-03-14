@@ -7,6 +7,9 @@ require 'ruby-debug'
 require 'highline/import'
 HighLine.track_eof = false
 
+require 'digest/sha1'
+require 'yaml'
+
 include Bankjob        # access the namespace of Bankjob
 
 SORT_CODE         = 0
@@ -20,6 +23,22 @@ class HbosString < String
   # HBos fill empty cells with \240 for some reason. Crazy.
   def blank?
     super || self == "\240"
+  end
+end
+
+class HbosAnswerAgent
+  def initialize(configuration)
+    @configuration = configuration
+  end
+
+  def answer(question)
+    key = Digest::SHA1.hexdigest(question.to_s.downcase)
+    lookup(key)
+  end
+
+  private
+  def lookup(key)
+    YAML.load_file(@configuration)[key]
   end
 end
 
@@ -205,13 +224,20 @@ class HbosScraper < BaseScraper
     login_page = agent.get(LOGIN_URL)
     form  = login_page.form('frmFormsLogin')
 
-    username, password = *scraper_args unless scraper_args.nil?
+    username, password, answer_agent = *scraper_args unless scraper_args.nil?
     form.Username = username || ask("username:\n")
     form.password = password || ask("password:\n") { |q| q.echo = "•" }
 
     prompts = agent.page.search(".LoginPrompt")
-    if question = prompts[2].inner_html.strip rescue nil
-      form.answer          = ask( question ) { |q| q.echo = "•" }
+    question = prompts[2].inner_html.strip
+
+    if answer_agent.blank?
+      if question = prompts[2].inner_html.strip rescue nil
+        form.answer = ask( question ) { |q| q.echo = "•" }
+      end
+    else
+      answer_agent = HbosAnswerAgent.new(answer_agent)
+      form.answer = answer_agent.answer(question)
     end
 
     agent.submit(form)

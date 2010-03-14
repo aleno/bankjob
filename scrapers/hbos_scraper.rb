@@ -24,6 +24,23 @@ class HbosString < String
   def blank?
     super || self == "\240"
   end
+
+  def to_f
+    # We're going to do lots of substitution so let's do it in-place to
+    # avoid creating lots of objects. Of course, we don't want to mutate
+    # the original string so lets use a duplicate.
+    str = dup
+    # Strip the £ symbol.
+    str.gsub!("\243", '')
+    # Swap the crazy minus symbol for a dash like would be expected.
+    str.gsub!("\226", '-')
+    # Strip commas or the float will be truncated as the first comma.
+    str.gsub!(',',"")
+    # Same idea with spaces as with commas.
+    str.gsub!(' ', '')
+    # We should be safe to convert to a float now.
+    str.to_f
+  end
 end
 
 class HbosAnswerAgent
@@ -153,9 +170,9 @@ class HbosScraper < BaseScraper
 
       statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
       summary_cells = (transactions_page/".summaryBoxesValues")
-      closing_available = summary_cells[AVAILABLE_BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
+      closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
       statement.closing_available = closing_available
-      closing_balance = summary_cells[BALANCE].inner_text.gsub("\243", '').gsub("\226", '-').gsub(',',"").gsub(' ', '').to_f
+      closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
       statement.closing_balance = closing_balance
 
       transactions = []

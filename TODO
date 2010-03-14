@@ -6,9 +6,6 @@ TODO
   think you're uploading a new account. I think this means we'll need
   to have a customisable OFX generator.
 
-* It'd be nice to have pluggable output mechanisms so I could do eg
-  bankjob --out json:/path/to/wherever.json --out ofx:/path/to/other.ofx
-
 * Wesabe should be an output plugin.
   bankjob --out wesabe:"<username> <password> <bank_account_id>"
 

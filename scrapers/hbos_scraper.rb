@@ -223,9 +223,12 @@ class HbosScraper < BaseScraper
     statement.transactions = transactions
     return statement
   rescue => exception
-    msg = "Failed to parse the transactions page at due to exception: #{exception.message}\nCheck your user name and password."
+    msg = "Failed to parse the transactions page. Check your user name and password are correct."
     logger.fatal(msg);
-    logger.debug(exception)
+    logger.debug("(stacktrace) #{exception.message}")
+    exception.backtrace.each do |line|
+      logger.debug("(stacktrace) #{line}")
+    end
     logger.debug("Failed parsing transactions page:")
     logger.debug("--------------------------------")
     logger.debug(transactions_page) #.body

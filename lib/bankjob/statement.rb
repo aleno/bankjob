@@ -154,37 +154,6 @@ module Bankjob
       @closing_available = nil
       @transactions = merge_transactions(other)
     end
-
-    ##
-    # Generates a string for use as a header in a CSV file for a statement.
-    #
-    # Delegates to Transaction#csv_header
-    #
-    def self.csv_header
-      return Transaction.csv_header
-    end
-
-    ##
-    # Reads in transactions from a CSV file or string specified by +source+
-    # and adds them to this statement.
-    # 
-    # Uses a simple (dumb) heuristic to determine if the +source+ is a file
-    # or a string: if it contains a comma (,) then it is a string
-    # otherwise it is treated as a file path.
-    #
-    def from_csv(source, decimal = ".")
-      if (source =~ /,/)
-        # assume source is a string
-        FasterCSV.parse(source) do |row|
-          add_transaction(Transaction.from_csv(row, decimal))
-        end
-      else
-        # assume source is a filepath
-        FasterCSV.foreach(source) do |row|
-          add_transaction(Transaction.from_csv(row, decimal))
-        end
-      end
-    end
     
     ONE_MINUTE = 60
     ELEVEN_59_PM = 23 * 60 * 60 + 59 * 60  # seconds at 23:59

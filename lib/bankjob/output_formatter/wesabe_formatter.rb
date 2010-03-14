@@ -20,7 +20,6 @@ begin
           ofx_formatter.destination.rewind
           ofx = ofx_formatter.destination.read
 
-          
           wesabe = Wesabe.new(username, password)
           accounts = wesabe.accounts
 

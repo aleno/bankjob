@@ -6,7 +6,8 @@ require 'logger'
 $:.unshift(File.dirname(__FILE__)) unless
   $:.include?(File.dirname(__FILE__)) || $:.include?(File.expand_path(File.dirname(__FILE__)))
 
-require 'bankjob_runner.rb'
+require 'bankjob_runner'
+require 'output_formatter'
 
 module Bankjob
   class CLI
@@ -18,7 +19,7 @@ module Bankjob
       # The BanjobOptions module above, through the magic of OptiFlags
       # has augmented ARGV with the command line options accessible through
       # ARGV.flags.
-      runner = BankjobRunner.new()
+      runner = BankjobRunner.new
       runner.run(parse(argv), stdout)
     end # execute
 
@@ -36,18 +37,13 @@ module Bankjob
       options.log_file = nil
       options.debug = false
       options.input = nil
-      options.ofx = false # ofx is the default but only if csv is false
-      options.ofx_out = false
-      options.csv = false
-      options.csv_out = nil # allow for separate csv and ofx output files
-      options.wesabe_help = false
-      options.wesabe_upload = false
-      options.wesabe_args = nil
+      options.output_formatters = []
       options.logger = nil
 
       opt = OptionParser.new do |opt|
-  
-        opt.banner = "Bankjob - scrapes your online banking website and produces an OFX or CSV document.\n" +
+        opt.banner = "Bankjob - scrapes your online banking website for transaction details.\n" +
+                     "Transaction details can be output in a number of formats.\n" +
+                     "\n" +
                      "Usage: bankjob [options]\n"
 
         opt.version = Bankjob::BANKJOB_VERSION
@@ -98,59 +94,10 @@ module Bankjob
           options.debug = true
         end
 
-        opt.on('--ofx [FILE]',
-               "Write out the statement as an OFX2 compliant XML document."," ",
-               "If FILE is not specified, the XML is dumped to the console.",
-               "If FILE specifies a directory then a new file will be created with a",
-               "name generated from the dates of the first and last transactions.",
-               "If FILE specifies a file that already exists it will be overwritten."," ",
-               "(Note that ofx is the default format unless --csv is specified,",
-               "and that both CSV and OFX documents can be produced by specifying",
-               "both options.)\n") do |file|
-          options.ofx = true
-          options.ofx_out = file
-        end
-
-        opt.on('--csv [FILE]',
-               "Writes out the statement as a CSV (comma separated values) document.",
-               "All of the information available including numeric values for amount,",
-               "raw and rule-generated descriptions, etc, are produced in the CSV document.", " ",
-               "The document produced is suitable for loading into a spreadsheet like",
-               "Microsoft Excel with the dates formatted to allow for auto recognition.",
-               "This option can be used in conjunction with --ofx or --wesabe to produce",
-               "a local permanent log of all the data scraped over time.", " ",
-               "If FILE is not specified, the CSV is dumped to the console.",
-               "If FILE specifies a directory then a new file will be created with a",
-               "name generated from the dates of the first and last transactions.",
-               "If FILE specifies a file that already exists then the new statement",
-               "will be appended to the existing one in that file with care taken to",
-               "merge removing duplicate entries.\n",
-               "[WARNING - this merging does not yet function properly - its best to specify a directory for now.]\n"
-             ) do |file|
-          # TODO update this warning when we have merging working
-          options.csv = true
-          options.csv_out = file
-        end
-
-        opt.on('--wesabe-help [WESABE_ARGS]',
-               "Show help information on how to use Bankjob to upload to Wesabe.",
-               "Optionally use with \"wesabe-user password\" to get Wesabe account info.",
-               "Note that the quotes around the WESABE_ARGS to send both username",
-               "and password are necessary.", " ",
-               "Use --wesabe-help with no args for more details.\n") do |wargs|
-          options.wesabe_args = sub_args_to_array(wargs)
-          options.wesabe_help = true
-          options.scraper = NOT_NEEDED # scraper is not NEEDED when this option is set
-        end
-
-        opt.on('--wesabe WESABE_ARGS',
-               "Produce an OFX document from the statement and upload it to a Wesabe account.",
-               "WESABE_ARGS must be quoted and space-separated, specifying the wesabe account",
-               "username, password and - if there is more than one - the wesabe account number.", " ",
-               "Before trying this, use bankjob --wesabe-help to get more information.\n"
-             ) do |wargs|
-          options.wesabe_args = sub_args_to_array(wargs)
-          options.wesabe_upload = true
+        opt.on('--out FORMATTER',
+                "Format output using this formatter. Default: stdout.") do |configuration|
+          formatter = Bankjob::OutputFormatter.new(configuration)
+          options.output_formatters << formatter
         end
 
         opt.on('--version', "Display program version and exit.\n" ) do
@@ -160,25 +107,6 @@ module Bankjob
  
         opt.on_tail('-h', '--help', "Display this usage message and exit.\n" ) do
           puts opt
-          puts <<-EOF
-
-  Some common options:
-
-    o Debugging:
-      --debug --scraper bpi_scraper.rb --input /tmp/DownloadedPage.html --ofx
-     
-    o Regular use: (output ofx documents to a directory called 'bank')
-      --scraper /bank/mybank_scraper.rb --scraper-args "me mypass123" --ofx /bank --log /bank/bankjob.log --verbose
-      
-    o Abbreviated options with CSV output: (output csv appended continuously to a file)
-      -s /bank/otherbank_scraper.rb --csv /bank/statements.csv -l /bank/bankjob.log -q
-
-    o Get help on using Wesabe:
-      --wesabe-help
-
-    o Upload to Wesabe: (I have 4 Wesabe accounts and am uploading to the 3rd)
-      -s /bank/mybank_scraper.rb --wesabe "mywesabeuser password 3"  -l /bank/bankjob.log --debug
-  EOF
           exit!
         end
   
@@ -205,10 +133,10 @@ module Bankjob
         #Note that OptionParser doesn't really handle compulsory arguments so we use
         #our own mechanism
         if options.scraper == NEEDED
-          raise "Incomplete arguments: You must specify a scaper ruby script with --scraper"
+          raise "Incomplete arguments: You must specify a scraper ruby script with --scraper"
         end
 
-        # Add in the --ofx option if it is not already specified and if --csv is not specified either
+        # Set output to stdout if it's not been set
         options.ofx = true unless options.csv or options.wesabe_upload
       rescue Exception => e
         if options.debug

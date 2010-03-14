@@ -264,7 +264,6 @@ class HbosScraper < BaseScraper
     end
 
     agent.submit(form)
-    sleep 3  # wait while the login takes effect
   end
 
   private

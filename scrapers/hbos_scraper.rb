@@ -16,6 +16,13 @@ BALANCE           = 3
 OVERDRAFT_LIMIT   = 4
 AVAILABLE_BALANCE = 5
 
+class HbosString < String
+  # HBos fill empty cells with \240 for some reason. Crazy.
+  def blank?
+    super || self == "\240"
+  end
+end
+
 ##
 # HbosScraper is a scraper tailored to the HBOS bank in the UK (http://www.bankofscotland.co.uk/).
 # It takes advantage of the BaseScraper to create the mechanize agent,
@@ -147,7 +154,7 @@ class HbosScraper < BaseScraper
 
         # When consecutive transactions occur on the same date, the date is only displayed on the
         # first row. So if current line has no date, get the date from the previous date.
-        if current_line.date.blank?
+        if HbosString.new(current_line.date).blank?
           current_line.date = current_date
         else
           current_date = current_line.date
@@ -160,7 +167,7 @@ class HbosScraper < BaseScraper
         
         # Rows with no money in or out value just contain extra description. Skip these.
         next if blank_line?(current_line)
-        amount = current_line.money_out.blank? ?
+        amount = HbosString.new(current_line.money_out).blank? ?
           current_line.money_in :
           "-" + current_line.money_out
 
@@ -224,7 +231,7 @@ class HbosScraper < BaseScraper
   end
 
   def blank_line?(line)
-    line.money_out.blank? and line.money_in.blank?
+    HbosString.new(line.money_out).blank? and HbosString(line.money_in).blank?
   end
 
 end # class HbosScraper

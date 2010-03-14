@@ -205,28 +205,19 @@ class HbosScraper < BaseScraper
   #
   def fetch_transactions_page(agent)
     login(agent)
-    
-    statement_links = (agent.current_page/"#ctl00_MainPageContent_MyAccountsCtrl_tbl a")
-    if statement_links.blank?
-      puts "Wait a bit, and try again later." and return
-    else
-      open_account_page(agent)
-    end
+    open_account_page(agent)
   end
 
   def open_account_page(agent)
     link = if target_account.blank?
-      statement_links.map { |link| link.inner_html }.each_with_index do |account_number,index|
-        puts "[#{index}] - #{account_number}"
-      end
-      choice = ask("Which account do you want to scrape?")
-  
-      agent.page.links.detect { |link|
-        link.text == statement_links[choice.to_i].inner_html
-      }
+      ask_for_target_account(agent)
     else
       @account_name = target_account
-      agent.page.link_with(:text => @account_name)
+      link = agent.page.link_with(:text => @account_name)
+      link || begin
+        puts "I couldnt find a link with text '#{@account_name}'."
+        ask_for_target_account(agent)
+      end
     end
 
     account_type = (link.node.parent / "text()")[1].to_s
@@ -239,6 +230,20 @@ class HbosScraper < BaseScraper
     if scraper_args.size > 3
       scraper_args[3..-1].join(' ')
     end
+  end
+
+  def ask_for_target_account(agent)
+    statement_links = (agent.current_page/"#ctl00_MainPageContent_MyAccountsCtrl_tbl a")
+    abort "Couldn't get a list of your accounts." if statement_links.blank?
+
+    statement_links.map { |link| link.inner_html }.each_with_index do |account_number,index|
+      puts "[#{index}] - #{account_number}"
+    end
+    choice = ask("Which account do you want to scrape?")
+
+    agent.page.links.detect { |link|
+      link.text == statement_links[choice.to_i].inner_html
+    }
   end
 
   ##

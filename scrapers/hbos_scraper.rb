@@ -134,6 +134,7 @@ class HbosScraper < BaseScraper
       Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
       current_line = Struct::Line.new
       previous_line = Struct::Line.new
+      current_date = nil
       rows.each_with_index do |row,index|
         next if index == 0 # first row is just headers
 
@@ -145,9 +146,11 @@ class HbosScraper < BaseScraper
         current_line = Struct::Line.new(*data)
 
         # When consecutive transactions occur on the same date, the date is only displayed on the
-        # first row. So if current line has no date, get the date from the previous line.
+        # first row. So if current line has no date, get the date from the previous date.
         if current_line.date.blank?
-          current_line.date = previous_line.date
+          current_line.date = current_date
+        else
+          current_date = current_line.date
         end
 
         # Check if previous line was blank. If so, merge its description into the current line description.

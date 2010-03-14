@@ -78,7 +78,7 @@ module Bankjob
           options.log_file = log_file
         end
 
-        opt.on('q', '--quiet', "Suppress all messages, warnings and errors.",
+        opt.on('-q', '--quiet', "Suppress all messages, warnings and errors.",
                "Only fatal errors will go in the log") do
           options.log_level = Logger::FATAL
         end

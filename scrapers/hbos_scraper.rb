@@ -219,17 +219,6 @@ class HbosScraper < BaseScraper
   end
 
   private
-
-  def parse_scraper_args(args)
-    key_indices = (0..args.size).to_a.select{ |v| v % 2 == 0 }
-    value_indices = (0..args.size).to_a.select{ |v| v % 2 == 1 }
-    answers = {}
-    key_indices.size.times do |i|
-      answers[args[key_indices[i]]] = args[value_indices[i]]
-    end
-    answers
-  end
-
   def blank_line?(line)
     HbosString.new(line.money_out).blank? and HbosString.new(line.money_in).blank?
   end

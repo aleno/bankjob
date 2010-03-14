@@ -12,9 +12,17 @@ module Bankjob
       def output(statement)
         output_to(destination) do |ofx|
           ofx.instruct!
-          ofx.instruct! :OFX, :OFXHEADER => 200, :SECURITY => "NONE",
-                        :OLDFILEUID => "NONE", :NEWFILEUID => "NONE",
-                        :VERSION => "200"
+          # Normally I'd do this:
+          #
+          # ofx.instruct! :OFX, :OFXHEADER => 200, :SECURITY => "NONE",
+          #               :OLDFILEUID => "NONE", :NEWFILEUID => "NONE",
+          #               :VERSION => "200"
+          #
+          # trouble is, I can't guarantee the order that the attributes
+          # will be output in and Wesabe can't seem to parse the file if
+          # they're in an order different to the below.
+          #
+          ofx << '<?OFX OFXHEADER="200" SECURITY="NONE" OLDFILEUID="NONE" NEWFILEUID="NONE" VERSION="200"?>'
 
           ofx.OFX {
             ofx.BANKMSGSRSV1 { #Bank Message Response

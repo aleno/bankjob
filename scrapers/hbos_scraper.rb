@@ -29,7 +29,7 @@ class HbosString < String
     # We're going to do lots of substitution so let's do it in-place to
     # avoid creating lots of objects. Of course, we don't want to mutate
     # the original string so lets use a duplicate.
-    str = dup
+    str = String.new(dup)
     # Strip the £ symbol.
     str.gsub!("\243", '')
     # Swap the crazy minus symbol for a dash like would be expected.

@@ -165,75 +165,73 @@ class HbosScraper < BaseScraper
   # Overrides (implements) +parse_transactions_page+ in BaseScraper.
   #
   def parse_transactions_page(transactions_page)
-    begin
-      statement = create_statement
+    statement = create_statement
 
-      statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
-      summary_cells = (transactions_page/".summaryBoxesValues")
-      closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
-      statement.closing_available = closing_available
-      closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
-      statement.closing_balance = closing_balance
+    statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
+    summary_cells = (transactions_page/".summaryBoxesValues")
+    closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
+    statement.closing_available = closing_available
+    closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
+    statement.closing_balance = closing_balance
 
-      transactions = []
-      table = (transactions_page/"#frmStatement table")
-      rows = (table/"tr")
-      date_tracker = nil
-      Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
-      current_line = nil
-      previous_line = Struct::Line.new
-      current_date = nil
-      rows.each_with_index do |row,index|
-        next if index == 0 # first row is just headers
+    transactions = []
+    table = (transactions_page/"#frmStatement table")
+    rows = (table/"tr")
+    date_tracker = nil
+    Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
+    current_line = nil
+    previous_line = Struct::Line.new
+    current_date = nil
+    rows.each_with_index do |row,index|
+      next if index == 0 # first row is just headers
 
-        transaction = create_transaction # use the support method because it sets the separator
+      transaction = create_transaction # use the support method because it sets the separator
 
-        # collect all of the table cells' inner html in an array (stripping leading/trailing spaces)
-        previous_line = current_line
-        data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
-        current_line = Struct::Line.new(*data)
-        next if blank_line?(current_line)
+      # collect all of the table cells' inner html in an array (stripping leading/trailing spaces)
+      previous_line = current_line
+      data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
+      current_line = Struct::Line.new(*data)
+      next if blank_line?(current_line)
 
-        current_date ||= current_line.date
-        # When consecutive transactions occur on the same date, the date is only displayed on the
-        # first row. So if current line has no date, get the date from the previous date.
-        if HbosString.new(current_line.date).blank?
-          current_line.date = current_date
-        else
-          current_date = current_line.date
-        end
-
-        # Check if previous line was blank. If so, merge its description into the current line description.
-        if previous_line && blank_line?(previous_line)
-          current_line.description = [current_line.description, previous_line.description].join(", ")
-        end
-        
-        # Rows with no money in or out value just contain extra description. Skip these.
-        amount = HbosString.new(current_line.money_out).blank? ?
-          current_line.money_in : "-" + current_line.money_out
-
-        transaction.date            = current_line.date
-        transaction.raw_description = current_line.description
-        extra_description = []
-        transaction.amount          = amount
-        transaction.new_balance     = current_line.balance
-
-        transactions << transaction
+      current_date ||= current_line.date
+      # When consecutive transactions occur on the same date, the date is only displayed on the
+      # first row. So if current line has no date, get the date from the previous date.
+      if HbosString.new(current_line.date).blank?
+        current_line.date = current_date
+      else
+        current_date = current_line.date
       end
-    rescue => exception
-      msg = "Failed to parse the transactions page at due to exception: #{exception.message}\nCheck your user name and password."
-      logger.fatal(msg);
-      logger.debug(exception)
-      logger.debug("Failed parsing transactions page:")
-      logger.debug("--------------------------------")
-      logger.debug(transactions_page) #.body
-      logger.debug("--------------------------------")
-      abort(msg)
+
+      # Check if previous line was blank. If so, merge its description into the current line description.
+      if previous_line && blank_line?(previous_line)
+        current_line.description = [current_line.description, previous_line.description].join(", ")
+      end
+
+      # Rows with no money in or out value just contain extra description. Skip these.
+      amount = HbosString.new(current_line.money_out).blank? ?
+      current_line.money_in : "-" + current_line.money_out
+
+      transaction.date            = current_line.date
+      transaction.raw_description = current_line.description
+      extra_description = []
+      transaction.amount          = amount
+      transaction.new_balance     = current_line.balance
+
+      transactions << transaction
     end
 
     # set the transactions on the statement
     statement.transactions = transactions
     return statement
+  rescue => exception
+    msg = "Failed to parse the transactions page at due to exception: #{exception.message}\nCheck your user name and password."
+    logger.fatal(msg);
+    logger.debug(exception)
+    logger.debug("Failed parsing transactions page:")
+    logger.debug("--------------------------------")
+    logger.debug(transactions_page) #.body
+    logger.debug("--------------------------------")
+    abort(msg)
   end
 
   ##

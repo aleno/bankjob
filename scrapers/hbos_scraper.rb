@@ -213,7 +213,6 @@ class HbosScraper < BaseScraper
 
       transaction.date            = current_line.date
       transaction.raw_description = current_line.description
-      extra_description = []
       transaction.amount          = amount
       transaction.new_balance     = current_line.balance
 

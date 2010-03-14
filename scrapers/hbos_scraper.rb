@@ -112,28 +112,34 @@ class HbosScraper < BaseScraper
     if statement_links.blank?
       puts "Wait a bit, and try again later." and return
     else
+      open_account_page(agent)
+    end
+  end
+
+  def open_account_page(agent)
+    if target_account.blank?
       statement_links.map { |link| link.inner_html }.each_with_index do |account_number,index|
         puts "[#{index}] - #{account_number}"
       end
       choice = ask("Which account do you want to scrape?")
-    
+  
       link_for_chosen_account = agent.page.links.detect { |link|
-        # link.class                  =>   WWW::Mechanize::Page::Link
-        # statement_links[x].class    =>   Hpricot::Elem
         link.text == statement_links[choice.to_i].inner_html
       }
 
       @account_name = link_for_chosen_account.text
-      transactions_page = link_for_chosen_account.click
+      link_for_chosen_account.click
+    else
+      @account_name = target_account
+      agent.page.link_with(:text => target_account).click
     end
-
-    logger.info("Logged in, now navigating to transactions on #{link_for_chosen_account.uri}.")
-    if (transactions_page.nil?)
-      raise "HBOS Scraper failed to load the transactions page at #{link_for_chosen_account.uri}"
-    end
-    return transactions_page
   end
 
+  def target_account
+    if scraper_args.size > 3
+      scraper_args[3..-1].join(' ')
+    end
+  end
 
   ##
   # Parses the HBOS page listing about a weeks worth of transactions

@@ -52,19 +52,25 @@ class HbosAnswerAgent
   end
 end
 
-class HbosCurrentAccountTransactionParser
-  SORT_CODE         = 0
-  ACCOUNT_NUMBER    = 1
-  ROLL_NUMBER       = 2
-  BALANCE           = 3
-  OVERDRAFT_LIMIT   = 4
-  AVAILABLE_BALANCE = 5
+class HbosStandardTransactionParser
+  def initialize(account_type)
+    case account_type
+    when "Bank of Scotland Current Account"
+      @balance_cell = 3
+      @available_balance_cell = 5
+    when "Halifax Instant Saver"
+      @balance_cell = 4
+      @available_balance_cell = 3
+    else
+      raise "I don't know how to parse the summary cells for '#{account_type}' accounts."
+    end
+  end
 
   def parse_into_statement(transactions_page, statement)
     summary_cells = (transactions_page/".summaryBoxesValues")
-    closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
+    closing_available = HbosString.new(summary_cells[@available_balance_cell].inner_text).to_f
     statement.closing_available = closing_available
-    closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
+    closing_balance =  HbosString.new(summary_cells[@balance_cell].inner_text).to_f
     statement.closing_balance = closing_balance
 
     transactions = []
@@ -119,7 +125,7 @@ class HbosCurrentAccountTransactionParser
   end
 end
 
-class HbosStandardMasterCardAccountTransactionParser
+class HbosCreditCardAccountTransactionParser
   BALANCE           = 0
   AVAILABLE_BALANCE = 5
 
@@ -163,10 +169,10 @@ class HbosTransactionParser
 
   def parser_implementation
     case account_type.strip
-    when "Bank of Scotland Current Account"
-      HbosCurrentAccountTransactionParser.new
+    when "Bank of Scotland Current Account", "Halifax Instant Saver"
+      HbosStandardTransactionParser.new account_type.strip
     when "Standard Mastercard"
-      HbosStandardMasterCardAccountTransactionParser.new
+      HbosCreditCardAccountTransactionParser.new
     else
       raise "Could not work out the parser type to use for '#{account_type}'"
     end
@@ -261,7 +267,6 @@ class HbosScraper < BaseScraper
     while node['class'] !~ /myAccountsDetailsCell/
       node = node.parent
     end
-    puts((node / "text()")[-2].inspect)
     account_type = (node / "text()")[-2].to_s
     @transaction_parser = HbosTransactionParser.new(account_type)
     @account_name = link.text

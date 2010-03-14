@@ -12,6 +12,8 @@ TODO
 * Wesabe should be an output plugin.
   bankjob --out wesabe:"<username> <password> <bank_account_id>"
 
+* Could there be a FreeAgent output plugin?
+
 * Some bank accounts don't have both bank_id and account_id. Credit
   cards for example only have a card number.
 

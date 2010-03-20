@@ -9,9 +9,6 @@ TODO
   banking and the bank account. One online banking account may have
   access to several bank accounts.
 
-* If Bankjob::Statement attributes +to_date+ and +from_date+ aren't set
-  these should be calculated from the first and last transaction dates.
-
 * Scrapers should be specified the same way that output formatters are.
   bankjob --scraper bpi:"username password" ...
 

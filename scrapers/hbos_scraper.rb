@@ -136,7 +136,7 @@ class HbosCreditCardAccountTransactionParser
   AVAILABLE_BALANCE = 5
 
   def create_statement(card_number)
-    statement = Bankjob::Statement.new(card_number.strip)
+    statement = Bankjob::Statement.new(card_number.strip, "GBP")
     statement.account_type = "CREDITLINE"
     statement
   end
@@ -205,7 +205,7 @@ class HbosTransactionParser
       parser_implementation.create_statement(account_name)
     else
       bank_id, account_number = *account_name.strip.split(/ /, 2).map{|s|s.strip}
-      statement = Bankjob::Statement.new(account_number)
+      statement = Bankjob::Statement.new(account_number, "GBP")
       statement.bank_id = bank_id
       statement
     end

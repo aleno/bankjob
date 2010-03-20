@@ -1,11 +1,6 @@
 TODO
 ====
 
-* The OFX should (near enough) match the downloadable version on your
-  bank website. If they don't and you try to upload to Wesabe it'll
-  think you're uploading a new account. I think this means we'll need
-  to have a customisable OFX generator.
-
 * Could there be a FreeAgent output plugin?
 
 * Instructions for writing your own scraper would be nice.

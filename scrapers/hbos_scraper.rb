@@ -26,7 +26,7 @@ class HbosString < String
     str.gsub!("\243", '')
     # Swap the crazy minus symbol for a dash like would be expected.
     str.gsub!("\226", '-')
-    # Strip commas or the float will be truncated as the first comma.
+    # Strip commas or the float will be truncated at the first comma.
     str.gsub!(',',"")
     # Same idea with spaces as with commas.
     str.gsub!(' ', '')

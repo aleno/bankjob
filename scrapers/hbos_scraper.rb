@@ -71,12 +71,19 @@ class HbosStandardTransactionParser
     statement.closing_available = closing_available
     closing_balance =  HbosString.new(summary_cells[@balance_cell].inner_text).to_f
     statement.closing_balance = closing_balance
+    Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
 
-    transactions = []
+    while next_page = transactions_page.link_with(:text => "next>>")
+      parse_page(transactions_page, statement)
+      transactions_page = next_page.click
+    end
+    parse_page(transactions_page, statement)
+  end
+
+  def parse_page(transactions_page, statement)
     table = (transactions_page/"#frmStatement table")
     rows = (table/"tr")
     date_tracker = nil
-    Struct.new("Line", :date, :description, :money_out, :money_in, :balance)
     current_line = nil
     previous_line = Struct::Line.new
     current_date = nil
@@ -107,7 +114,7 @@ class HbosStandardTransactionParser
 
       # Rows with no money in or out value just contain extra description. Skip these.
       amount = HbosString.new(current_line.money_out).blank? ?
-        current_line.money_in : "-" + current_line.money_out
+      current_line.money_in : "-" + current_line.money_out
 
       transaction.date            = current_line.date
       transaction.raw_description = current_line.description

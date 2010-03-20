@@ -214,17 +214,6 @@ class HbosScraper < BaseScraper
   account_type Statement::CHECKING # this is the default anyway
   account_number "1234567890" # gets overridden later
 
-  # This rule detects ATM withdrawals and modifies
-  # the description and sets the the type
-  transaction_rule do |tx|
-    if (tx.real_amount < 0)
-      if tx.raw_description =~ /LEV.*ATM ELEC\s+\d+\/\d+\s+/i
-        tx.description = "Multibanco withdrawal at #{$'}"
-        tx.type = Transaction::ATM
-      end
-    end
-  end
-
   # This rule detects checque payments and modifies the description
   # and sets the type
   transaction_rule do |tx|

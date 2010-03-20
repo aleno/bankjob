@@ -6,9 +6,6 @@ TODO
   think you're uploading a new account. I think this means we'll need
   to have a customisable OFX generator.
 
-* Wesabe should be an output plugin.
-  bankjob --out wesabe:"<username> <password> <bank_account_id>"
-
 * Could there be a FreeAgent output plugin?
 
 * Some bank accounts don't have both bank_id and account_id. Credit

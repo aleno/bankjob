@@ -147,7 +147,7 @@ class HbosCreditCardAccountTransactionParser
       data = (row/"td").collect{ |cell| cell.inner_html.strip.gsub(/&nbsp;/, "") }
       current_line = Struct::Line.new(*data)
 
-      transaction.date            = current_line.date
+      transaction.date            = Date.strptime(current_line.date, "%d/%m").to_s
       transaction.raw_description = current_line.description
       transaction.amount          = (HbosString.new(current_line.amount).to_f).to_s
       if transaction.raw_description !~ /^payment /i && transaction.raw_description !~ /^direct debit /i

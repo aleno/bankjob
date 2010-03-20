@@ -135,12 +135,18 @@ class HbosCreditCardAccountTransactionParser
   BALANCE           = 0
   AVAILABLE_BALANCE = 5
 
+  def create_statement(card_number)
+    statement = Bankjob::Statement.new(card_number.strip)
+    statement.account_type = "CREDITLINE"
+    statement
+  end
+
   def parse_into_statement(transactions_page, statement)
     summary_cells = (transactions_page/".summaryBoxesValues")
     closing_available = HbosString.new(summary_cells[AVAILABLE_BALANCE].inner_text).to_f
     statement.closing_available = closing_available
     closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
-    statement.closing_balance = closing_balance
+    statement.closing_balance = -1 * closing_balance
     Struct.new("Line", :date, :entered, :description, :amount)
 
     while next_page = transactions_page.link_with(:text => "Next Page")
@@ -192,6 +198,17 @@ class HbosTransactionParser
 
   def method_missing(method_name, *args)
     parser_implementation.send(method_name, *args)
+  end
+
+  def create_statement(account_name)
+    if parser_implementation.respond_to?(:create_statement)
+      parser_implementation.create_statement(account_name)
+    else
+      bank_id, account_number = *account_name.strip.split(/ /, 2).map{|s|s.strip}
+      statement = Bankjob::Statement.new(account_number)
+      statement.bank_id = bank_id
+      statement
+    end
   end
 end
 
@@ -301,8 +318,7 @@ class HbosScraper < BaseScraper
   # Overrides (implements) +parse_transactions_page+ in BaseScraper.
   #
   def parse_transactions_page(transactions_page)
-    statement = create_statement
-    statement.bank_id, statement.account_number = *@account_name.strip.split(/ /, 2).map{|s|s.strip}
+    statement = @transaction_parser.create_statement(@account_name)
     @transaction_parser.parse_into_statement(transactions_page, statement)
     statement
   rescue => exception

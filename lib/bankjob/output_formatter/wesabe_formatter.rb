@@ -26,8 +26,8 @@ begin
           # FIXME: All these puts lines should really go to a logger.
           if accounts.empty?
             puts "You should create a bank account at http://wesabe.com/ before using this plugin."
-          elsif account_number && account_number.to_i > accounts.length
-            puts "You only have #{accounts.length} accounts but asked to upload to account number #{account_number}."
+          elsif account_number && !accounts.any? { |account| account.id == account_number.to_i }
+            puts "You asked to upload to account number #{account_number} but your accounts are numbered #{accounts.map{|a| a.id}.join(', ')}."
           elsif !account_number && accounts.length > 1
             puts "You didn't specify an account number to upload to but you have #{accounts.length} accounts."
           elsif account_number && account_number.to_i <= 0

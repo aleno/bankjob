@@ -134,9 +134,18 @@ class HbosCreditCardAccountTransactionParser
     statement.closing_available = closing_available
     closing_balance =  HbosString.new(summary_cells[BALANCE].inner_text).to_f
     statement.closing_balance = closing_balance
+    Struct.new("Line", :date, :entered, :description, :amount)
+
+    while next_page = transactions_page.link_with(:text => "Next Page")
+      parse_page(transactions_page, statement)
+      transactions_page = next_page.click
+    end
+    parse_page(transactions_page, statement)
+  end
+
+  def parse_page(transactions_page, statement)
     table = transactions_page / ".DataTable"
     rows = (table/"tr")
-    Struct.new("Line", :date, :entered, :description, :amount)
 
     rows.each_with_index do |row, index|
       # First row is just headers
@@ -149,10 +158,7 @@ class HbosCreditCardAccountTransactionParser
 
       transaction.date            = Date.strptime(current_line.date, "%d/%m").to_s
       transaction.raw_description = current_line.description
-      transaction.amount          = (HbosString.new(current_line.amount).to_f).to_s
-      if transaction.raw_description !~ /^payment /i && transaction.raw_description !~ /^direct debit /i
-        transaction.amount = "-#{transaction.amount}"
-      end
+      transaction.amount          = (-1 * HbosString.new(current_line.amount).to_f).to_s
 
       statement.transactions << transaction
     end

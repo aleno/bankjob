@@ -8,9 +8,6 @@ TODO
 
 * Could there be a FreeAgent output plugin?
 
-* Some bank accounts don't have both bank_id and account_id. Credit
-  cards for example only have a card number.
-
 * Instructions for writing your own scraper would be nice.
 
 * There needs to be a distinction between the account for online

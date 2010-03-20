@@ -3,7 +3,6 @@ require 'bankjob'      # this require will pull in all the classes we need
 require 'base_scraper' # this defines scraper that HbosScraper extends
 require 'active_support'
 
-require 'ruby-debug'
 require 'highline/import'
 HighLine.track_eof = false
 

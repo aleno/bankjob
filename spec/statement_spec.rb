@@ -47,31 +47,31 @@ describe Statement do
     @tx5.new_balance = "1.405,90"
 
     # the lot
-    @s12345 = Statement.new
+    @s12345 = Statement.new('1')
     @s12345.transactions = [ @tx1.dup, @tx2.dup, @tx3.dup, @tx4.dup, @tx5.dup]
 
     # first 2
-    @s12 = Statement.new
+    @s12 = Statement.new('1')
     @s12.transactions = [ @tx1.dup, @tx2.dup]
 
     # middle 1
-    @s3 = Statement.new
+    @s3 = Statement.new('1')
     @s3.transactions = [ @tx3.dup]
 
     # last 2
-    @s45 = Statement.new
+    @s45 = Statement.new('1')
     @s45.transactions = [ @tx4.dup, @tx5.dup]
     
     # first 3
-    @s123 = Statement.new
+    @s123 = Statement.new('1')
     @s123.transactions = [ @tx1.dup, @tx2.dup, @tx3.dup]
 
     # last 4, overlaps with 23 of s123
-    @s2345 = Statement.new
+    @s2345 = Statement.new('1')
     @s2345.transactions = [ @tx2.dup, @tx3.dup, @tx4.dup, @tx5.dup]
 
     # 2nd and last - overlaps non-contiguously with s123
-    @s25 = Statement.new
+    @s25 = Statement.new('1')
     @s25.transactions = [ @tx2.dup, @tx5.dup]
     
   end
@@ -97,14 +97,14 @@ describe Statement do
 
   it "should read back a satement from csv as it was written" do
     csv = @s123.to_csv
-    statement = Statement.new()
+    statement = Statement.new('1')
     statement.from_csv(csv, ",")
     statement.should == @s123
   end
 
   it "should read back and merge a statement with itself without change" do
     csv = @s123.to_csv
-    statement = Statement.new()
+    statement = Statement.new('1')
     statement.from_csv(csv, ",")
     m = @s123.merge(statement)
     m.should == @s123
@@ -112,7 +112,7 @@ describe Statement do
 
   it "should write, read, merge and write a statement without changing it" do
     csv = @s123.to_csv
-    statement = Statement.new()
+    statement = Statement.new('1')
     m = @s123.merge(statement)
     m_csv = m.to_csv
     m_csv.should == csv

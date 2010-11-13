@@ -61,7 +61,7 @@ class ItauUYScraper < BaseScraper
   end
 
   # Some constants for the URLs and main elements in the Itau UY bank app
-  LOGIN_URL = 'https://www.itaulink.com.uy/appl/index.jsp'
+  LOGIN_URL = 'https://www.itaulink.com.uy'
 
   ##
   # Uses the mechanize web +agent+ to fetch the page holding the most recent
@@ -160,8 +160,11 @@ class ItauUYScraper < BaseScraper
     end
     raise "Login failed for Itau UY Scraper - pass user name, password and account using -scraper_args \"user <space> pass <space> account\"" unless (username and password and account)
 
+    # Important to get the session cookie.
+    page = agent.get("#{LOGIN_URL}/index.jsp")
+
     # navigate to the login page
-    login_page = agent.get(LOGIN_URL)
+    login_page = agent.get("#{LOGIN_URL}/appl/index.jsp")
 
     # find login form - it's called 'form1' - fill it out and submit it
     form  = login_page.form('form1')
@@ -169,6 +172,7 @@ class ItauUYScraper < BaseScraper
     # username and password are taken from the commandline args, set them
     # on USERID and PASSWORD which are the element names that the web page
     # form uses to identify the form fields
+    form.tipo_documento = "1" # Cédula de identidad
     form.nro_documento = username
     form.password = password
 

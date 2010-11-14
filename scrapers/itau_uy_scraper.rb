@@ -98,12 +98,12 @@ class ItauUYScraper < BaseScraper
       
       # each row with the bgcolor attribute set to "#FDF2D0" holds a transaction, except for
       # the first and last ones which hold initial and final balances. We ignore them.
-      rows = (transactions_page/"tr[@bgcolor='#FDF2D0']")[1..-2]
+      rows = transactions_page.search("tr[@bgcolor='#FDF2D0']")[1..-2]
       rows.each do |row|
         transaction = create_transaction # use the support method because it sets the separator
 
         # collect all of the table cells' inner text in an array (stripping leading/trailing spaces)
-        data = (row/"td").collect{ |cell| cell.inner_text.gsub("\302\240","").strip }
+        data = row.search("td").collect{ |cell| cell.content.gsub("\302\240","").strip }
 
         # the first (0th) column holds the date
         transaction.date = data[0]
@@ -143,8 +143,8 @@ class ItauUYScraper < BaseScraper
   end
 
   def get_account_number(transactions_page)
-    element = (transactions_page/"td[@class='Texto_bold_grande']").detect {|elem| elem.inner_text =~ /en.+n.mero.+?(\d+)/ }
-    account_number = element.inner_text.match(/en.+n.mero.+?(\d+)/)[1]
+    element = transactions_page.search("td[class='Texto_bold_grande']").detect {|elem| elem.content =~ /en.+número.+?(\d+)/ }
+    account_number = element.content.match(/en.+número.+?(\d+)/)[1]
     return account_number
   end
 

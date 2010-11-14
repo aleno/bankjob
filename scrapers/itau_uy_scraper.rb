@@ -22,7 +22,7 @@ include Bankjob        # access the namespace of Bankjob
 class ItauUYScraper < BaseScraper
 
   currency  "USD" # Set the currency as dollars
-  decimal   ","    # Itau UY statements use commas as separators - this is used by the real_amount method
+  decimal   "."    # Itau UY statements use commas as separators but we convert them to periods anyway
   account_number "1234567" # override this with a real account number
   account_type Statement::CHECKING # this is the default anyway
 
@@ -115,10 +115,10 @@ class ItauUYScraper < BaseScraper
         # the 4th column holds the credit transaction amount (with comma as decimal place)
         amount = "-" + data[2]            # asume debit
         amount = data[3] if amount == "-" # change to credit if needed
-        transaction.amount = amount
+        transaction.amount = amount.tr('.', '').tr(',', '.')
 
         # the new balance is in the last column
-        transaction.new_balance = data[4]
+        transaction.new_balance = data[4].tr('.', '').tr(',', '.')
 
         # add thew new transaction to the array
         statement.add_transaction(transaction)

@@ -420,6 +420,22 @@ module Bankjob
       end
     end
 
+    def finish_with_most_recent_last(fake_times = false)
+      unless @transactions.empty?
+        @closing_balance    ||= transactions.last.new_balance
+        @closing_available  ||= transactions.last.new_balance
+        @to_date            ||= transactions.last.date
+        @from_date          ||= transactions.first.date
+
+        start_time = 2 * 60 * 60 # 2 AM
+        @transactions.group_by {|tx| tx.date }.each do |date, txs|
+          txs.each_with_index do |tx, i|
+            tx.date += start_time + i * ONE_MINUTE
+          end
+        end
+      end
+    end
+
     def to_s
       buf = "#{self.class}: close_bal = #{closing_balance}, avail = #{closing_available}, curr = #{currency}, transactions:"
       transactions.each do |tx|

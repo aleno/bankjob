@@ -120,8 +120,13 @@ class ItauUYScraper < BaseScraper
         # the new balance is in the last column
         transaction.new_balance = data[4].tr('.', '').tr(',', '.')
 
-        # add thew new transaction to the array
-        statement.add_transaction(transaction)
+        # Don't include today's transactions as the time faking would
+        # produce different transaction times when regenerated in the future.
+        # Not including today is not a big problem.
+        unless transaction.date.strftime("%Y%m%d") == Date.today.strftime("%Y%m%d")
+          # add thew new transaction to the array
+          statement.add_transaction(transaction)
+        end
       end
     rescue => exception
       msg = "Failed to parse the transactions page at due to exception: #{exception.message}\nCheck your user name and password."

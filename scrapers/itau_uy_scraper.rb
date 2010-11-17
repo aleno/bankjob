@@ -142,7 +142,7 @@ class ItauUYScraper < BaseScraper
     # finish the statement to set the balances and dates
     # and to fake the times since the Itau UY web pages
     # don't hold the transaction times
-    statement.finish(true, true) # most_recent_first, fake_times
+    statement.finish(false, true) # most_recent_first, fake_times
 
     return statement
   end

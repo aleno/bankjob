@@ -21,6 +21,8 @@ include Bankjob        # access the namespace of Bankjob
 #
 class ItauUYScraper < BaseScraper
 
+  MONTHS_IN_SPANISH = %w(ENE FEB MAR ABR MAY JUN JUL AGO SET OCT NOV DIC).freeze
+
   currency  "USD" # Set the currency as dollars
   decimal   "."    # Itau UY statements use commas as separators but we convert them to periods anyway
   account_number "1234567" # override this with a real account number
@@ -82,7 +84,13 @@ class ItauUYScraper < BaseScraper
     return transactions_page
   end
 
-  
+  def date_from_spanish(date_str) # example input: 20ENE2010
+    day   = date_str[0, 2].to_i
+    month = date_str[2, 3]
+    year  = date_str[5, 4].to_i
+    Time.local(year, MONTHS_IN_SPANISH.index(month) + 1, day)
+  end
+
   ##
   # Parses the Itau UY page listing about a weeks worth of transactions
   # and creates a Transaction for each one, putting them together
@@ -95,7 +103,7 @@ class ItauUYScraper < BaseScraper
 
       account_number = get_account_number(transactions_page)
       statement.account_number = account_number unless account_number.nil?
-      
+
       # each row with the bgcolor attribute set to "#FDF2D0" holds a transaction, except for
       # the first and last ones which hold initial and final balances. We ignore them.
       rows = transactions_page.search("tr[@bgcolor='#FDF2D0']")[1..-2]
@@ -106,7 +114,7 @@ class ItauUYScraper < BaseScraper
         data = row.search("td").collect{ |cell| cell.content.gsub("\302\240","").strip }
 
         # the first (0th) column holds the date
-        transaction.date = data[0]
+        transaction.date = date_from_spanish(data[0])
 
         # the transaction raw_description is in the 2nd column
         transaction.raw_description = data[1].gsub(/\s+/, ' ')

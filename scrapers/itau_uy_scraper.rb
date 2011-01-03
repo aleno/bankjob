@@ -23,7 +23,7 @@ class ItauUYScraper < BaseScraper
 
   MONTHS_IN_SPANISH = %w(ENE FEB MAR ABR MAY JUN JUL AGO SET OCT NOV DIC).freeze
 
-  currency  "USD" # Set the currency as dollars
+  currency  "USD" # Set the default currency as dollars
   decimal   "."    # Itau UY statements use commas as separators but we convert them to periods anyway
   account_number "1234567" # override this with a real account number
   account_type Statement::CHECKING # this is the default anyway
@@ -164,9 +164,11 @@ class ItauUYScraper < BaseScraper
   def login(agent)
     logger.info("Logging in to #{LOGIN_URL}.")
     if (scraper_args)
-      username, password, account = *scraper_args
+      username, password, account, currency = *scraper_args
     end
-    raise "Login failed for Itau UY Scraper - pass user name, password and account using -scraper_args \"user <space> pass <space> account\"" unless (username and password and account)
+    raise "Login failed for Itau UY Scraper - pass user name, password, account and currency using -scraper_args \"user <space> pass <space> account <space> currency\"" unless (username and password and account and currency)
+
+    self.class.currency currency
 
     # Important to get the session cookie.
     page = agent.get("#{LOGIN_URL}/index.jsp")

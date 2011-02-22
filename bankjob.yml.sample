@@ -1,0 +1,25 @@
+# copy this file to ~/.bankjob.yml and customize it with real data
+itau_dollars:
+  tipo: empresa
+  empresa: MYCOMPANY
+  pwd_empresa: 1234
+  usuario: myuser
+  pwd_usuario: monkey
+  account: 1234
+  currency: USD
+
+itau_pesos:
+  tipo: empresa
+  empresa: MYCOMPANY
+  pwd_empresa: 1234
+  usuario: myuser
+  pwd_usuario: monkey
+  account: 5678
+  currency: UYU
+
+itau_personal:
+  tipo: persona
+  usuario: myid
+  password: monkey
+  account: 1234
+  currency: UYU

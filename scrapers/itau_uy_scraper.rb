@@ -1,7 +1,7 @@
-
 require 'rubygems'
 require 'bankjob'      # this require will pull in all the classes we need
 require 'base_scraper' # this defines scraper that ItauUYScraper extends
+require 'pathname'
 
 include Bankjob        # access the namespace of Bankjob
 
@@ -20,7 +20,6 @@ include Bankjob        # access the namespace of Bankjob
 # before scraping the statement
 #
 class ItauUYScraper < BaseScraper
-
   MONTHS_IN_SPANISH = %w(ENE FEB MAR ABR MAY JUN JUL AGO SET OCT NOV DIC).freeze
 
   currency  "USD" # Set the default currency as dollars
@@ -65,14 +64,36 @@ class ItauUYScraper < BaseScraper
   # Some constants for the URLs and main elements in the Itau UY bank app
   LOGIN_URL = 'https://www.itaulink.com.uy'
 
+  def named_args
+    @named_args ||= {"config" => "~/.bankjob.yml", "env" => "default"}.tap do |h|
+      scraper_args.each do |pair|
+        k, v = pair.split(':')
+        h[k] = v
+      end
+    end
+  end
+
+  def args
+    @args ||= load_args
+  end
+
+  def load_args
+    config = Pathname.new(named_args['config']).expand_path
+    if config.file?
+      logger.info "Loading config from #{config} for environment '#{named_args['env']}'"
+      YAML.load_file(config).fetch(named_args['env']).merge(named_args)
+    else
+      named_args
+    end
+  end
+
   ##
   # Uses the mechanize web +agent+ to fetch the page holding the most recent
   # bank transactions and returns it.
   # This overrides (implements) +fetch_transactions_page+ in BaseScraper
   #
   def fetch_transactions_page(agent)
-    account = scraper_args[2]
-    transactions_url = "https://www.itaulink.com.uy/appl/servlet/FeaServlet?consulta=1&dias=10&mes_anio=102010&numero=&dia=&mes=&anio=&id=estado_cuenta_avanzado&bajar_archivo=N&nro_cuenta=#{account}&cod_moneda=US.D&tipo_cuenta=0&Submit=Enviar&fecha="
+    transactions_url = "https://www.itaulink.com.uy/appl/servlet/FeaServlet?consulta=1&dias=10&mes_anio=102010&numero=&dia=&mes=&anio=&id=estado_cuenta_avanzado&bajar_archivo=N&nro_cuenta=#{args['account']}&cod_moneda=US.D&tipo_cuenta=0&Submit=Enviar&fecha="
 
     login(agent)
     logger.info("Logged in, now navigating to transactions on #{transactions_url}.")
@@ -163,12 +184,8 @@ class ItauUYScraper < BaseScraper
   #
   def login(agent)
     logger.info("Logging in to #{LOGIN_URL}.")
-    if (scraper_args)
-      username, password, account, currency = *scraper_args
-    end
-    raise "Login failed for Itau UY Scraper - pass user name, password, account and currency using -scraper_args \"user <space> pass <space> account <space> currency\"" unless (username and password and account and currency)
 
-    self.class.currency currency
+    self.class.currency args['currency']
 
     # Important to get the session cookie.
     page = agent.get("#{LOGIN_URL}/index.jsp")
@@ -179,12 +196,30 @@ class ItauUYScraper < BaseScraper
     # find login form - it's called 'form1' - fill it out and submit it
     form  = login_page.form('form1')
 
-    # username and password are taken from the commandline args, set them
-    # on USERID and PASSWORD which are the element names that the web page
-    # form uses to identify the form fields
-    form.tipo_documento = "1" # Cédula de identidad
-    form.nro_documento = username
-    form.password = password
+    if args["tipo"].downcase == "empresa"
+      rb_value = "C" # empresa
+    else
+      rb_value = "R" # persona
+    end
+
+    form.radiobuttons_with(:name => "tipo_usuario").each do |rb|
+      rb.checked = rb.value == rb_value
+    end
+
+    if args["tipo"].downcase == "empresa"
+      form.empresa_aux = args['empresa']
+      form.pwd_empresa = args['pwd_empresa']
+      form.usuario_aux = args['usuario']
+      form.pwd_usuario = args['pwd_usuario']
+
+      # Hidden fields are assigned by javascript but we do it here.
+      form.empresa = form.empresa_aux.upcase
+      form.usuario = form.usuario_aux.downcase
+    else
+      form.tipo_documento = "1" # Cédula de identidad
+      form.nro_documento = args['usuario']
+      form.password = args['password']
+    end
 
     # submit the form - same as the user hitting the Login button
     agent.submit(form)

@@ -93,6 +93,13 @@ class ItauUYScraper < BaseScraper
   # This overrides (implements) +fetch_transactions_page+ in BaseScraper
   #
   def fetch_transactions_page(agent)
+    # Current month
+    #transactions_url = "https://www.itaulink.com.uy/appl/servlet/FeaServlet?id=estado_cuenta&nro_cuenta=#{args['account']}&tipo_cuenta=0&cod_moneda=US.D"
+
+    # Previous month (072011)
+    #transactions_url = "https://www.itaulink.com.uy/appl/servlet/FeaServlet?consulta=2&dias=10&mes_anio=072011&numero=&dia=&mes=&anio=&id=estado_cuenta_avanzado&bajar_archivo=N&nro_cuenta=#{args['account']}&cod_moneda=US.D&tipo_cuenta=0&Submit=Enviar&fecha="
+
+    # Last 10 days
     transactions_url = "https://www.itaulink.com.uy/appl/servlet/FeaServlet?consulta=1&dias=10&mes_anio=102010&numero=&dia=&mes=&anio=&id=estado_cuenta_avanzado&bajar_archivo=N&nro_cuenta=#{args['account']}&cod_moneda=US.D&tipo_cuenta=0&Submit=Enviar&fecha="
 
     login(agent)

@@ -1,0 +1,5 @@
+To use with Itaú in Uruguay (www.itaulink.com.uy)
+
+Use bankjob.yml.sample as a basis for your config file. Then call bankjob using Ruby 1.8.7 (not 1.9) like this:
+
+$ ./bin/bankjob -s scrapers/itau_uy_scraper.rb --ofx my_exported_data.ofx --scraper-args env:itau_dollars

@@ -1,22 +1,6 @@
 require 'rubygems'
 require 'mechanize'
-require 'hpricot'
 require 'bankjob'
-
-# Later versions of Mechanize no longer use Hpricot by default
-# but have an attribute we can set to use it
-begin
-  Mechanize.html_parser = Hpricot
-
-  # For some reason something tries to sort an Hpricot::Elem[] which
-  # fails because Hpricot::Elem doesn't have a <=> method.
-  if !Hpricot::Elem.instance_methods.include?("<=>")
-    Hpricot::Elem.class_eval do
-      def <=>(other); 0; end
-    end
-  end
-rescue NoMethodError
-end
 
 include Bankjob
 

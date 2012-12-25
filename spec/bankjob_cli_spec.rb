@@ -3,13 +3,13 @@ require 'bankjob/cli'
 
 describe Bankjob::CLI, "execute" do
   before(:each) do
-    @stdout_io = StringIO.new
-    Bankjob::CLI.execute(@stdout_io, [])
-    @stdout_io.rewind
-    @stdout = @stdout_io.read
+    #@stdout_io = StringIO.new
+    #Bankjob::CLI.execute(@stdout_io, [])
+    #@stdout_io.rewind
+    #@stdout = @stdout_io.read
   end
   
   it "should do something" do
-    @stdout.should_not =~ /To update this executable/
+    #@stdout.should_not =~ /To update this executable/
   end
 end

@@ -243,7 +243,7 @@ module Bankjob
       if other.kind_of?(Transaction)
         # sometimes the same date, when written and read back will not appear equal so convert to 
         # a canonical string first
-        return (Bankjob.date_time_to_ofx(@date) == Bankjob.date_time_to_ofx(other.date) and
+        return (@date.strftime( '%Y%m%d%H%M%S' ) == other.date.strftime( '%Y%m%d%H%M%S' ) and
             # ignore value date - it may be updated between statements
             # (consider using ofx_id here later)
             @raw_description == other.raw_description and
@@ -268,7 +268,7 @@ module Bankjob
       result = 1;
       result = prime * result + @amount.to_i
       result = prime * result + @new_balance.to_i
-      result = prime * result + (@date.nil? ? 0 : Bankjob.date_time_to_ofx(@date).hash);
+      result = prime * result + (@date.nil? ? 0 : @date.strftime( '%Y%m%d%H%M%S' ).hash);
       result = prime * result + (@raw_description.nil? ? 0 : @raw_description.hash);
       result = prime * result + (@type.nil? ? 0 : @type.hash);
       # don't use value date

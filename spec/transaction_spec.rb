@@ -22,7 +22,7 @@ describe Transaction do
     @tx1_dup = @tx1.dup
 
     @tx2 = Transaction.new()
-    @tx2.date = "0080729000000"
+    @tx2.date = "20080729000000"
     @tx2.value_date = "20080731145906" 
     @tx2.raw_description = "Interest payment"
     @tx2.amount = "-59,94"

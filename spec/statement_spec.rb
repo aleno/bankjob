@@ -16,7 +16,7 @@ describe Statement do
 
 
     @tx2 = Transaction.new(",")
-    @tx2.date = "0080729000000"
+    @tx2.date = "20080729000000"
     @tx2.value_date = "20080731145906"
     @tx2.raw_description =  "2 Interest payment 001"
     @tx2.amount = "-59,94"

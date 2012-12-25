@@ -1,2 +1,5 @@
 .bundle
 Gemfile.lock
+
+# Ignore temp files
+*.swp

@@ -95,27 +95,5 @@ describe Statement do
     m.transactions.each { |tx| print "#{tx.to_s}, "}
   end
 
-  it "should read back a satement from csv as it was written" do
-    csv = @s123.to_csv
-    statement = Statement.new('1')
-    statement.from_csv(csv, ",")
-    statement.should == @s123
-  end
-
-  it "should read back and merge a statement with itself without change" do
-    csv = @s123.to_csv
-    statement = Statement.new('1')
-    statement.from_csv(csv, ",")
-    m = @s123.merge(statement)
-    m.should == @s123
-  end
-
-  it "should write, read, merge and write a statement without changing it" do
-    csv = @s123.to_csv
-    statement = Statement.new('1')
-    m = @s123.merge(statement)
-    m_csv = m.to_csv
-    m_csv.should == csv
-  end
 end
 

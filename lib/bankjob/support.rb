@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 require 'rubygems'
 require 'bankjob'
 
@@ -42,7 +44,7 @@ module Bankjob
   #
   def self.string_to_float(string, decimal)
     return nil if string.nil?
-    amt = string.gsub(/\s/, '')
+    amt = string.gsub(/\p{Space}/, '')
     if (decimal == ',') # E.g.  "1.000.030,99"
       amt.gsub!(/\./, '')  # strip out . 1000s separator
       amt.gsub!(/,/, '.')  # replace decimal , with .

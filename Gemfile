@@ -1,9 +1,10 @@
 source :gemcutter
 
-gem 'builder', '=2.1.2'
-gem 'mechanize', '=1.0.0'
-gem 'rubigen', '=1.5.5'
+# gem 'builder', '=3.1.4'
+gem 'mechanize', '=2.5.1'
+# gem 'rubigen', '=1.5.8'
 
-gem 'newgem', '=1.5.3'
+# gem 'newgem', '=1.5.3'
+gem 'money', '5.1.0'
 
-gem 'rspec', '=1.3.1'
+gem 'rspec', '=2.12.0'

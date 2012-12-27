@@ -107,7 +107,7 @@ include Bankjob
       if (not options.input.nil?) then
         # used for debugging - load the page from a file instead of the web
         logger.debug("Reading debug input html from #{options.input} instead of scraping the real website.")
-        page = Hpricot(open(options.input))
+        page = Nokogiri::HTML(open(options.input))
       else
         # not debugging use the actual scraper
         # First create a mechanize agent: a sort of pretend web browser

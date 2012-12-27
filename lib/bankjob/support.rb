@@ -2,6 +2,7 @@
 #
 require 'rubygems'
 require 'bankjob'
+require 'money'
 
 module Bankjob
 

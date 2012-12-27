@@ -50,7 +50,7 @@ module Bankjob
                     ofx.STMTTRN {
                       ofx.TRNTYPE transaction.type
                       ofx.DTPOSTED transaction.date.strftime('%Y%m%d%H%M%S')
-                      ofx.TRNAMT transaction.amount	#Amount of transaction [amount] can be , or . separated
+                      ofx.TRNAMT transaction.real_amount	#Amount of transaction [amount] can be , or . separated
                       ofx.FITID transaction.ofx_id
                       ofx.PAYEE {
                         ofx.NAME transaction.payee.name
@@ -97,7 +97,7 @@ module Bankjob
                     ofx.STMTTRN {	# transaction statement
                       ofx.TRNTYPE transaction.type
                       ofx.DTPOSTED transaction.date.strftime('%Y%m%d%H%M%S')	#Date transaction was posted to account, [datetime] yyyymmdd or yyyymmddhhmmss
-                      ofx.TRNAMT transaction.amount	#Amount of transaction [amount] can be , or . separated
+                      ofx.TRNAMT transaction.real_amount	#Amount of transaction [amount] can be , or . separated
                       ofx.FITID transaction.ofx_id
                       ofx.CHECKNUM transaction.check_number unless transaction.check_number.nil?
                       ofx.PAYEE {

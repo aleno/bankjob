@@ -91,7 +91,7 @@ describe Statement do
 
 
   it "should merge non-contiguous with an error" do
-    m =  @s123.merge(@s25)
+    expect {@s123.merge(@s25)}.to raise_error
     # m.transactions.each { |tx| print "#{tx.to_s}, "}
   end
 

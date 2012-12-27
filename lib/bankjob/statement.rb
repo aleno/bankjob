@@ -123,7 +123,7 @@ module Bankjob
         union = transactions | other.transactions # the set union of both
         # now check that the union contains all of the originals, otherwise
         # we have merged some sort of non-contiguous range
-        raise "Failed to merge transactions properly." unless union.first(@transactions.length) == @transactions
+        raise "Failed to merge transactions properly." unless union.last(other.transactions.length) == other.transactions
         return union
       end
     end

@@ -44,6 +44,7 @@ module Bankjob
   #
   def self.string_to_float(string, decimal)
     return nil if string.nil?
+    return string.to_f if string.kind_of?(Money)
     amt = string.gsub(/\p{Space}/, '')
     if (decimal == ',') # E.g.  "1.000.030,99"
       amt.gsub!(/\./, '')  # strip out . 1000s separator

@@ -92,7 +92,7 @@ describe Statement do
 
   it "should merge non-contiguous with an error" do
     m =  @s123.merge(@s25)
-    m.transactions.each { |tx| print "#{tx.to_s}, "}
+    # m.transactions.each { |tx| print "#{tx.to_s}, "}
   end
 
 end

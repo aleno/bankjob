@@ -30,10 +30,10 @@ describe Transaction do
   end
 
   it "should generate the same ofx_id as its copy" do
-    puts "tx1: #{@tx1.to_s}\n-----"
-    puts "tx1_copy: #{@tx1.to_s}"
+    #puts "tx1: #{@tx1.to_s}\n-----"
+    #puts "tx1_copy: #{@tx1.to_s}"
     @tx1.ofx_id.should == @tx1_copy.ofx_id
-    puts "#{@tx1.ofx_id} == #{@tx1_copy.ofx_id}"
+    #puts "#{@tx1.ofx_id} == #{@tx1_copy.ofx_id}"
   end
 
   it "should generate the same ofx_id as its duplicate" do

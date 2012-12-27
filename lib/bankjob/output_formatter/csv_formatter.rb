@@ -6,7 +6,7 @@ module Bankjob
       attr_accessor :destination
 
       def initialize(destination)
-        @destination = destination.blank? ? STDOUT : destination
+        @destination = destination.empty? ? STDOUT : destination
       end
 
       def output(statement)
@@ -24,7 +24,7 @@ module Bankjob
             information << transaction.date.strftime("%Y-%m-%d")
             information << transaction.type
             information << transaction.description
-            information << transaction.amount
+            information << transaction.real_amount
             csv << information
           end
         end

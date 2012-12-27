@@ -20,7 +20,7 @@ module Bankjob
           information << transaction.date.strftime("%Y-%m-%d")
           information << transaction.type
           information << transaction.description
-          information << transaction.amount
+          information << transaction.real_amount
           p "%-10.10s %-8.8s %-49.49s %10.10s" % information
         end
       end

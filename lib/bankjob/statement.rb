@@ -261,8 +261,8 @@ module Bankjob
 
     def finish_with_most_recent_last(fake_times = false)
       unless @transactions.empty?
-        @closing_balance    ||= transactions.last.new_balance
-        @closing_available  ||= transactions.last.new_balance
+        @closing_balance    ||= transactions.last.real_new_balance
+        @closing_available  ||= transactions.last.real_new_balance
         @to_date            ||= transactions.last.date
         @from_date          ||= transactions.first.date
 

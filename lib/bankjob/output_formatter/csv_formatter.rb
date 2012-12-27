@@ -1,4 +1,4 @@
-require 'fastercsv'
+require 'csv'
 
 module Bankjob
   class OutputFormatter
@@ -34,9 +34,9 @@ module Bankjob
       def output_to(destination, &block)
         case destination
         when String
-          FasterCSV.open(destination, 'w') { |csv| yield csv }
+          CSV.open(destination, 'w') { |csv| yield csv }
         when IO
-          FasterCSV(destination) { |csv| yield csv }
+          CSV(destination) { |csv| yield csv }
         end
       end
     end

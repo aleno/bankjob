@@ -6,7 +6,7 @@ module Bankjob
       attr_accessor :destination
 
       def initialize(destination = nil)
-        @destination = destination.blank? ? STDOUT : destination
+        @destination = destination.to_s.empty? ? STDOUT : destination
       end
 
       def output(statement)

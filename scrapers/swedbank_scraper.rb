@@ -105,7 +105,7 @@ class SwedbankScraper < BaseScraper
     # finish the statement to set the balances and dates
     # and to fake the times since the bpi web pages
     # don't hold the transaction times
-    statement.finish_with_most_recent_last(true)
+    statement.finish(true, true)
 
     return statement
   end

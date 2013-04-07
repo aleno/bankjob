@@ -16,7 +16,7 @@ class MbankScraper < BaseScraper
 
   def fetch_transactions_page(agent)
     csv = IO.read("./history.csv")
-    csv_utf = Iconv.conv("utf-8", "cp1250", csv)
+    csv_utf = csv.encode("UTF-8")
     FasterCSV.parse(csv_utf, :headers => true, :col_sep => ";")
   end
 

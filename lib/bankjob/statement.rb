@@ -204,13 +204,13 @@ module Bankjob
         # if the user hasn't set the balances, set them to the first or last
         # transaction balance depending on the order
         if most_recent_first then
-          @closing_balance ||= transactions.first.new_balance
-          @closing_available ||= transactions.first.new_balance
+          @closing_balance ||= transactions.first.real_new_balance
+          @closing_available ||= transactions.first.real_new_balance
           @to_date ||= transactions.first.date
           @from_date ||= transactions.last.date
         else
-          @closing_balance ||= transactions.last.new_balance
-          @closing_available ||= transactions.last.new_balance
+          @closing_balance ||= transactions.last.real_new_balance
+          @closing_available ||= transactions.last.real_new_balance
           @to_date ||= transactions.last.date
           @from_date ||= transactions.first.date
         end
